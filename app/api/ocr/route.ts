@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 
+
 const OCR_SERVER_URL = process.env.OCR_SERVER_URL || "http://localhost:8000/parse-marksheet";
 
 export async function POST(req: Request) {

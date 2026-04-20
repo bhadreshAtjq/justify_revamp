@@ -54,10 +54,20 @@ export function mapStudentMetadata(data: any) {
     return null;
   };
 
+  const nameVal = String(findVal(["Student Name", "Full Name", "Student_Name", "name"]) || "N/A");
+  
+  // Convert to Title Case (e.g., RAMESH AGARWAL -> Ramesh Agarwal)
+  const titleCaseName = nameVal
+    .toLowerCase()
+    .split(' ')
+    .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(' ');
+
   return {
     regNo: findVal(["Registration No", "Registration No.", "reg_no", "registration_no"]) || "N/A",
-    name: (findVal(["Student Name", "Full Name", "Student_Name", "name"]) || "N/A").toUpperCase(),
+    name: titleCaseName,
     gpa: findVal(["GPA", "G.P.A", "gpa"]) || "0.00",
+    // Additional fields used by the PDF marksheet preview (NOT used in hash generation)
     faculty: findVal(["Faculty", "faculty"]) || "POST-GRADUATE STUDIES",
     academicYear: findVal(["Academic Year", "Academic_Year"]) || "2017-2018",
     degree: findVal(["Degree Course", "degree", "Degree_Course"]) || "M.B.A. (AB)",

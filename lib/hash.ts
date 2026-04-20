@@ -1,5 +1,7 @@
-import { keccak256 } from "js-sha3";
+
 import { discoverSubjects, mapStudentMetadata } from "./marksheet";
+
+import { keccak256 } from "web3-utils";
 
 export interface HashStrategy {
   includeName: boolean;
@@ -17,37 +19,31 @@ export function generateStudentHash(
   strategy: HashStrategy
 ): string {
   const metadata = mapStudentMetadata(record);
-  const payload: any = {};
+  const subjects = discoverSubjects(record);
 
-  if (strategy.includeRegNo) {
-    payload.registration_no = metadata.regNo;
-  }
+  // ===== CANONICAL JSON — matches Python's build_canonical_payload =====
+  // Strict key order: registration_no -> name -> gpa -> subjects
+  // Each subject: code -> title -> credits -> grade
+  const payload = {
+    registration_no: String(metadata.regNo || ""),
+    name: String(metadata.name || ""),
+    gpa: String(metadata.gpa || ""),
+    subjects: subjects.map(s => ({
+      code: String(s.code || ""),
+      title: String(s.title || ""),
+      credits: String(s.credits || ""),
+      grade: String(s.grade || "")
+    }))
+  };
 
-  if (strategy.includeName) {
-    payload.name = metadata.name;
-  }
+  // Compact JSON with no spaces — identical to Python's json.dumps(separators=(',', ':'))
+  const combined = JSON.stringify(payload);
 
-  if (strategy.includeGPA) {
-    payload.gpa = metadata.gpa;
-  }
+  // Debug log
+  console.log("DEBUG: Canonical Hash Input ->", combined);
 
-  if (strategy.includeSubjects) {
-    payload.subjects = discoverSubjects(record);
-  }
-
-  // Canonical JSON stringification with sorted keys and no whitespace to match Python's json.dumps separators=(',', ':')
-  const sortedPayload: any = {};
-  Object.keys(payload).sort().forEach(key => {
-    sortedPayload[key] = payload[key];
-  });
-  
-  const combined = JSON.stringify(sortedPayload); 
-
-  // Debug log for the user to see the exact payload being hashed
-  console.log("DEBUG: Final Hash Payload JSON ->", combined);
-
+  // 0x prefix matches Python's Web3.to_hex()
   return keccak256(combined);
-
 }
 
 /**

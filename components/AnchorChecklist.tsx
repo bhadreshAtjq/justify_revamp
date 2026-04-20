@@ -23,12 +23,12 @@ export default function AnchorChecklist() {
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 16 }}>
         {options.map((opt) => (
-          <div 
+          <div
             key={opt.id}
             onClick={() => setHashConfig({ [opt.key]: !hashConfig[opt.key] })}
             className={`inner-card ${hashConfig[opt.key] ? 'border-primary' : ''}`}
-            style={{ 
-              cursor: 'pointer', 
+            style={{
+              cursor: 'pointer',
               transition: 'all 0.2s',
               border: hashConfig[opt.key] ? '2px solid var(--primary)' : '2px solid transparent',
               background: hashConfig[opt.key] ? 'rgba(96, 153, 102, 0.05)' : 'var(--canvas)'
@@ -46,11 +46,11 @@ export default function AnchorChecklist() {
           </div>
         ))}
       </div>
-      
+
       <div style={{ marginTop: 24, padding: '12px 16px', background: 'rgba(64, 81, 59, 0.05)', borderRadius: 12 }}>
-         <p style={{ fontSize: 10, fontWeight: 700, color: 'var(--accent)', textAlign: 'center' }}>
-           NOTE: Changing these selections will result in a completely different Merkle Root.
-         </p>
+        <p style={{ fontSize: 10, fontWeight: 700, color: 'var(--accent)', textAlign: 'center' }}>
+          NOTE: Changing these selections will result in a completely different Merkle Root.
+        </p>
       </div>
     </div>
   );

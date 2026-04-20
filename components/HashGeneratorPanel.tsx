@@ -4,6 +4,7 @@ import { useState } from "react";
 import { FaCheckCircle, FaHashtag, FaChevronDown, FaChevronUp } from "react-icons/fa";
 import CopyButton from "./CopyButton";
 import type { HashEntry } from "@/store/useAppStore";
+import { keccak256 } from "ethers";
 
 interface HashGeneratorPanelProps {
   hashes: HashEntry[];
