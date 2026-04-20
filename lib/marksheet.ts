@@ -2,6 +2,8 @@ export interface Subject {
   code: string;
   title: string;
 
+  credits: string;
+  grade: string;
   credit_points?: string;
 }
 
@@ -25,10 +27,12 @@ export function discoverSubjects(data: any): Subject[] {
         const val = String(data[key] || "").trim();
         if (type === 'code' || type === 'number') discovered[index].code = val;
         if (type === 'title' || type === 'name') discovered[index].title = val;
-
+        if (type === 'credits') discovered[index].credits = val;
         if (type === 'credit_points' || type === 'credits_points') discovered[index].credit_points = val;
 
-
+        if (type === 'grade' || type === 'grade_points' || (type === 'points' && !trimmedKey.toLowerCase().includes('credit'))) {
+          discovered[index].grade = val;
+        }
       }
     });
 
@@ -37,7 +41,8 @@ export function discoverSubjects(data: any): Subject[] {
       .map(k => ({
         code: discovered[k].code || "N/A",
         title: discovered[k].title || "Unknown Subject",
-
+        credits: discovered[k].credits || "-",
+        grade: discovered[k].grade || "-",
         credit_points: discovered[k].credit_points || "-"
       }))
       .filter(s => s.code !== "N/A" || s.title !== "Unknown Subject");

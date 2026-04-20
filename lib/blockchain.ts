@@ -31,12 +31,13 @@ export async function anchorDocument(docHash: string) {
   const hash = docHash.startsWith("0x") ? docHash : `0x${docHash}`;
   
   const tx = await contract.anchor(hash);
+  const txHash = tx.hash;
   const receipt = await tx.wait();
   
   return {
-    txHash: receipt.hash,
+    txHash: txHash,
     blockNumber: receipt.blockNumber,
-    status: "confirmed"
+    status: receipt.status === 1 ? "confirmed" : "failed"
   };
 }
 
@@ -55,12 +56,13 @@ export async function anchorMerkleRoot(merkleRoot: string) {
 
   // Using anchorBatch for maximum reliability and simplicity
   const tx = await contract.anchorBatch([root]);
+  const txHash = tx.hash;
   const receipt = await tx.wait();
   
   return {
-    txHash: receipt.hash,
+    txHash: txHash,
     blockNumber: receipt.blockNumber,
-    status: "confirmed"
+    status: receipt.status === 1 ? "confirmed" : "failed"
   };
 }
 
