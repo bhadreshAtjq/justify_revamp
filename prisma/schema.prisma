@@ -1,0 +1,36 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model StudentRecord {
+  id               String   @id @default(cuid())
+  registrationNo   String
+  name             String
+  gpa              String
+  data             Json     // Full object payload
+  keccak256Hash    String   @unique
+  merkleLeaf       String?  // The leaf hash used in the Merkle Tree
+  createdAt        DateTime @default(now())
+
+  anchorId         String?
+  anchor           MerkleAnchor? @relation(fields: [anchorId], references: [id])
+
+  @@index([registrationNo])
+  @@index([keccak256Hash])
+}
+
+model MerkleAnchor {
+  id          String   @id @default(cuid())
+  merkleRoot  String   @unique
+  txHash      String?
+  university  String?
+  year        String?
+  status      String   @default("pending") // pending, confirmed, failed
+  records     StudentRecord[]
+  createdAt   DateTime @default(now())
+}
