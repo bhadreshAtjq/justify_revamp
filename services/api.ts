@@ -14,8 +14,10 @@ export interface AnchorResponse {
 export interface OCRSubject {
   code: string;
   title: string;
-  credits: string;
-  grade: string;
+  credit_points: string;
+  // Optional legacy fields
+  credits?: string;
+  grade?: string;
 }
 
 export interface OCRResponse {
@@ -24,8 +26,6 @@ export interface OCRResponse {
   gpa: string;
   keccak256_hash?: string;
   subjects: OCRSubject[];
-  // Fallback for old format
-  Registration_No?: string;
 }
 
 export interface QualityResponse {
@@ -59,24 +59,21 @@ export interface VerifyResponse {
 export async function anchorRoot(
   merkleRoot: string,
   university: string,
-  year: string
+  year: string,
+  leaves: string[]
 ): Promise<AnchorResponse> {
-  try {
-    const response = await fetch(`${API_BASE}/api/anchor-root`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ merkleRoot, university, year }),
-    });
+  const response = await fetch(`${API_BASE}/api/anchor-root`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ merkleRoot, university, year, leaves }),
+  });
 
-    if (!response.ok) {
-      throw new Error(`Anchor failed: ${response.statusText}`);
-    }
-
-    return await response.json();
-  } catch (error) {
-    console.warn("Using mock anchor response:", error);
-    return mockAnchorResponse(merkleRoot);
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}));
+    throw new Error(errorData.details || errorData.error || `Anchor failed: ${response.statusText}`);
   }
+
+  return await response.json();
 }
 
 /**

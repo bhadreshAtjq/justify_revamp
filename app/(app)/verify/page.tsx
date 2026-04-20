@@ -22,16 +22,11 @@ export default function VerifyPage() {
       store.setVerifyFile(file);
       
       try {
-        // 1. Initial Quality Validation (PRE-PROCESSING)
+        // 1. Initial Quality Validation
         store.setLoading("isValidatingQuality", true);
         const quality = await validateQuality(file);
         store.setQualityResult(quality);
-        store.addActivityLog("quality_validated", `Document quality validated. Result: ${quality.is_valid ? 'PASSED' : 'WARNING'}`);
-        
-        if (!quality.is_valid) {
-          // You could potentially stop here or just show a warning
-          console.warn("Document quality issues detected:", quality.message);
-        }
+        store.addActivityLog("quality_validated", `Quality Check: ${quality.is_valid ? 'PASSED' : 'LOW QUALITY'}`);
         store.setLoading("isValidatingQuality", false);
 
         // 2. OCR Extraction
@@ -39,15 +34,20 @@ export default function VerifyPage() {
         const result = await processOCR(file);
         console.log("DEBUG: Raw OCR Result JSON ->", JSON.stringify(result, null, 2));
         
+        // Ensure result fields are present
+        if (!result.registration_no || !result.name) {
+          console.warn("DEBUG: OCR result missing critical fields (reg_no or name)");
+        }
+
         // 3. Recalculate hash in frontend (DETERMINISTIC)
         const hash = generateStudentHash(result, store.hashConfig);
+        console.log("DEBUG: Final Generated Hash ->", hash);
         store.setVerifyHash(hash);
 
-        // 4. Remove hash but KEEP gpa for display
-        const { keccak256_hash, raw_json, ...cleanResult } = result as any;
-        store.setOCRResult(cleanResult);
+        // 4. Set result for display
+        store.setOCRResult(result);
         
-        store.addActivityLog("ocr_complete", `OCR extraction complete. Generated Proof: ${hash.slice(0, 12)}...`);
+        store.addActivityLog("ocr_complete", `OCR extraction complete for ${result.name}. Hash: ${hash.slice(0, 12)}...`);
       } catch (err) {
         store.setError(err instanceof Error ? err.message : "Service Unavailable");
       } finally {

@@ -36,21 +36,10 @@ export default function DashboardPage() {
         store.setCSVData(headers, records);
         store.addActivityLog("csv_uploaded", `Ingested dataset: ${file.name} (${records.length} records)`);
 
-        // Database Synchronization
+        // Database Synchronization (Background)
         store.setLoading("isSyncing", true);
         try {
-          // Calculate temporary hashes for initial sync if needed, 
-          // but we'll let the user generate the 'official' ones later
           await syncRecordsToDB(records);
-          const dbRecords = await fetchRecordsFromDB();
-
-          // Identify headers from DB objects
-          if (dbRecords.length > 0) {
-            const dbHeaders = Object.keys(dbRecords[0].data);
-            const dbMapped = dbRecords.map(r => r.data as Record<string, string>);
-            store.setCSVData(dbHeaders, dbMapped);
-          }
-
           store.addActivityLog("csv_uploaded", "PostgreSQL Synchronization Successful");
         } catch (dbErr) {
           console.error("DB Sync Error:", dbErr);
@@ -105,7 +94,12 @@ export default function DashboardPage() {
     store.setError(null);
     store.setLoading("isAnchoring", true);
     try {
-      const result = await anchorRoot(store.merkleRoot, store.university, store.year);
+      const result = await anchorRoot(
+        store.merkleRoot, 
+        store.university, 
+        store.year,
+        store.merkleLeaves
+      );
       store.setAnchorResult(result);
       store.addActivityLog("anchored", `Root successfully anchored on chain (Block: ${result.blockNumber})`);
     } catch (err) {

@@ -69,18 +69,23 @@ export async function anchorMerkleRoot(merkleRoot: string) {
 /**
  * Verify a document hash against the blockchain.
  */
-export async function verifyOnChain(docHash: string) {
-  const hash = docHash.startsWith("0x") ? docHash : `0x${docHash}`;
+export async function verifyOnChain(hashOrRoot: string) {
+  const hash = hashOrRoot.startsWith("0x") ? hashOrRoot : `0x${hashOrRoot}`;
   
-  // Returns [anchored (bool), revoked (bool), blockNumber (uint256)]
-  const result = await anchorStore.isAnchored(hash);
-  
-  return {
-    anchored: result[0],
-    revoked: result[1],
-    blockNumber: result[2].toString(),
-    valid: result[0] && !result[1]
-  };
+  try {
+    // Returns [anchored (bool), revoked (bool), blockNumber (uint256)]
+    const result = await anchorStore.isAnchored(hash);
+    
+    return {
+      anchored: result[0],
+      revoked: result[1],
+      blockNumber: result[2].toString(),
+      valid: result[0] && !result[1]
+    };
+  } catch (err) {
+    console.error("Blockchain verification call failed:", err);
+    return { anchored: false, revoked: false, blockNumber: "0", valid: false };
+  }
 }
 
 /**

@@ -4,7 +4,7 @@ import { prisma } from "@/lib/prisma";
 
 export async function POST(req: Request) {
   try {
-    const { merkleRoot, university, year } = await req.json();
+    const { merkleRoot, university, year, leaves } = await req.json();
 
     if (!merkleRoot) {
       return NextResponse.json({ error: "Merkle root is required" }, { status: 400 });
@@ -30,6 +30,14 @@ export async function POST(req: Request) {
         status: "confirmed"
       }
     });
+
+    // 3. Link records to this anchor
+    if (Array.isArray(leaves) && leaves.length > 0) {
+      await prisma.studentRecord.updateMany({
+        where: { keccak256Hash: { in: leaves } },
+        data: { anchorId: anchor.id }
+      });
+    }
 
     return NextResponse.json({
       ...anchor,

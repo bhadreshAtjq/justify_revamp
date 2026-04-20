@@ -21,33 +21,27 @@ export default function VerificationCard({ result }: VerificationCardProps) {
   if (isRevoked) {
     icon = <FaExclamationTriangle />;
     accentColor = "#FF6B6B";
-    label = "Document Revoked";
+    label = "Blockchain Revoked";
     subtitle = "SECURITY ALERT";
-    description = "This transcript has been explicitly invalidated by the University's registrar.";
-  } else if (isAnchored && isDBMatched) {
+    description = "This credential hash has been explicitly revoked on the public blockchain.";
+  } else if (isAnchored) {
     icon = <FaCheckCircle />;
     accentColor = "#609966";
-    label = "Fully Authenticated";
-    subtitle = "DB + BLOCKCHAIN MATCH";
-    description = "The document matches our internal registry records and is anchored on the blockchain.";
-  } else if (isAnchored && !isDBMatched) {
-    icon = <FaCheckCircle />;
-    accentColor = "#A4BE7B";
-    label = "Anchored but Not in DB";
-    subtitle = "BLOCKCHAIN ONLY";
-    description = "This document is verified on the blockchain, but no matching student record was found in our local database.";
-  } else if (!isAnchored && isDBMatched) {
+    label = "Verified On-Chain";
+    subtitle = "POLYGON AMOY ANCHOR";
+    description = "Deterministic proof: This document's hash is securely anchored on the immutable ledger.";
+  } else if (isDBMatched) {
     icon = <FaExclamationTriangle />;
     accentColor = "#E6BA95";
-    label = "Record Found, Not Anchored";
-    subtitle = "REGISTRY MATCH ONLY";
-    description = "A matching record was found in our database, but it has not been anchored on the blockchain yet.";
+    label = "Registry Found, Not Anchored";
+    subtitle = "PENDING ON-CHAIN";
+    description = "Legacy Match: We found a matching administrative record, but it lacks an on-chain anchor.";
   } else {
     icon = <FaTimesCircle />;
     accentColor = "#40513B";
     label = "Verification Failed";
-    subtitle = "INVALID DOCUMENT";
-    description = "This document hash does not exist in our database or on the blockchain.";
+    subtitle = "HASH NOT FOUND";
+    description = "This document hash does not exist on the public blockchain or in the central registry.";
   }
 
   return (

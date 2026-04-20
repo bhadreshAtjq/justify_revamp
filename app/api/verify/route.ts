@@ -10,25 +10,31 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Document hash is required" }, { status: 400 });
     }
 
-    // 1. Check local Database
+    // 1. Initial on-chain check for the Leaf itself
+    let onChainResult = await verifyOnChain(docHash);
+
+    // 2. Fallback check for Merkle Root if DB link exists (internal optimization)
     const dbRecord = await prisma.studentRecord.findUnique({
       where: { keccak256Hash: docHash },
       include: { anchor: true }
     });
 
-    // 2. Check Blockchain
-    const onChainResult = await verifyOnChain(docHash);
+    if (!onChainResult.anchored && dbRecord?.anchor?.merkleRoot) {
+      const rootResult = await verifyOnChain(dbRecord.anchor.merkleRoot);
+      if (rootResult.anchored) {
+        onChainResult = { ...rootResult, inherited: true };
+      }
+    }
 
     return NextResponse.json({
       hash: docHash,
       onChain: onChainResult,
+      // Still return meta for UI display if found, but label it as "Registry Info"
       db: dbRecord ? {
         found: true,
         name: dbRecord.name,
         registrationNo: dbRecord.registrationNo,
-        gpa: dbRecord.gpa,
-        createdAt: dbRecord.createdAt,
-        anchor: dbRecord.anchor
+        gpa: dbRecord.gpa
       } : { found: false }
     });
   } catch (error: any) {

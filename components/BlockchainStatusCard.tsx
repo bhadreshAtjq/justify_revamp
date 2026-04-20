@@ -14,7 +14,7 @@ export default function BlockchainStatusCard({ result }: BlockchainStatusCardPro
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
         <div>
           <h3 style={{ marginBottom: 4 }}>Transaction Record</h3>
-          <p style={{ opacity: 0.6, fontSize: 13 }}>Finalized immutable anchor on Ethereal Chain</p>
+          <p style={{ opacity: 0.6, fontSize: 13 }}>Finalized immutable anchor on Polygon Chain</p>
         </div>
         <div className="success-indicator" style={{ background: 'rgba(96,153,102,0.1)', padding: '8px 16px', borderRadius: 12 }}>
           <FaCheckCircle /> <span style={{ textTransform: 'uppercase', fontSize: 12 }}>{result.status}</span>
@@ -35,15 +35,12 @@ export default function BlockchainStatusCard({ result }: BlockchainStatusCardPro
             <p className="section-meta" style={{ fontSize: 10 }}>BLOCK HEIGHT</p>
             <p style={{ fontWeight: 800, fontSize: 18 }}>{result.blockNumber}</p>
           </div>
-          <div className="inner-card" style={{ flex: 1 }}>
-            <p className="section-meta" style={{ fontSize: 10 }}>NETWORK</p>
-            <p style={{ fontWeight: 800, fontSize: 18 }}>ETH-MAINNET</p>
-          </div>
+            <p style={{ fontWeight: 800, fontSize: 18 }}>AMOY-POLYGON</p>
         </div>
 
         <div style={{ display: 'flex', gap: 12, marginTop: 12 }}>
           <a
-            href={`https://etherscan.io/tx/${result.txHash}`}
+            href={`https://amoy.polygonscan.com/tx/${result.txHash}`}
             target="_blank"
             rel="noopener noreferrer"
             className="btn-premium btn-solid"

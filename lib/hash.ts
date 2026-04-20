@@ -18,25 +18,27 @@ export function generateStudentHash(
   record: Record<string, any>,
   strategy: HashStrategy
 ): string {
-  const metadata = mapStudentMetadata(record);
-  const subjects = discoverSubjects(record);
+  // 1. Extract values with strict prioritization for the Render API format
+  const regNo = record.registration_no || record.Registration_No || mapStudentMetadata(record).regNo;
+  const name = record.name || record.Student_Name || mapStudentMetadata(record).name;
+  const gpa = record.gpa || record.GPA || mapStudentMetadata(record).gpa;
+  
+  // 2. Extract subjects - either from structured 'subjects' array or discovered from flat keys
+  const rawSubjects = Array.isArray(record.subjects) ? record.subjects : discoverSubjects(record);
 
-  // ===== CANONICAL JSON — matches Python's build_canonical_payload =====
-  // Strict key order: registration_no -> name -> gpa -> subjects
-  // Each subject: code -> title -> credits -> grade
+  // ===== CANONICAL JSON — MUST match Python exactly =====
+  // Payload: registration_no, name, gpa, subjects (code, title, credit_points)
   const payload = {
-    registration_no: String(metadata.regNo || ""),
-    name: String(metadata.name || ""),
-    gpa: String(metadata.gpa || ""),
-    subjects: subjects.map(s => ({
+    registration_no: String(regNo || ""),
+    name: String(name || ""),
+    gpa: String(gpa || ""),
+    subjects: rawSubjects.map((s: any) => ({
       code: String(s.code || ""),
       title: String(s.title || ""),
-
-      credit_points: String(s.credit_points || "")
+      credit_points: String(s.credit_points || s.Credit_Points || "")
     }))
   };
 
-  // Compact JSON with no spaces — identical to Python's json.dumps(separators=(',', ':'))
   const combined = JSON.stringify(payload);
 
   // Debug log
