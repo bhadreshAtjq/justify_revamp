@@ -3,7 +3,7 @@ import type { AnchorResponse, OCRResponse, VerifyResponse } from "@/services/api
 
 export interface ActivityLogEntry {
   id: string;
-  type: "csv_uploaded" | "hashes_generated" | "root_generated" | "anchored" | "ocr_complete" | "verified";
+  type: "csv_uploaded" | "hashes_generated" | "root_generated" | "anchored" | "ocr_complete" | "verified" | "quality_validated";
   message: string;
   timestamp: Date;
 }
@@ -37,6 +37,7 @@ interface AppState {
   // Verify state
   verifyFile: File | null;
   ocrResult: OCRResponse | null;
+  qualityResult: any | null;
   verifyHash: string;
   verifyResult: VerifyResponse | null;
 
@@ -45,6 +46,7 @@ interface AppState {
   isGeneratingHashes: boolean;
   isGeneratingMerkle: boolean;
   isAnchoring: boolean;
+  isValidatingQuality: boolean;
   isProcessingOCR: boolean;
   isVerifying: boolean;
   isSyncing: boolean;
@@ -60,12 +62,14 @@ interface AppState {
   setCSVData: (headers: string[], records: Record<string, string>[]) => void;
   setHashes: (hashes: HashEntry[]) => void;
   setMerkleData: (root: string, leaves: string[]) => void;
+  setHashesFromRecords: (hashes: HashEntry[]) => void;
   setAnchorResult: (result: AnchorResponse | null) => void;
   setUniversity: (university: string) => void;
   setYear: (year: string) => void;
   updateHashConfig: (config: Partial<HashConfig>) => void;
   setVerifyFile: (file: File | null) => void;
   setOCRResult: (result: OCRResponse | null) => void;
+  setQualityResult: (result: any | null) => void;
   setVerifyHash: (hash: string) => void;
   setVerifyResult: (result: VerifyResponse | null) => void;
   setLoading: (key: string, value: boolean) => void;
@@ -96,6 +100,7 @@ export const useAppStore = create<AppState>((set) => ({
   // Verify state
   verifyFile: null,
   ocrResult: null,
+  qualityResult: null,
   verifyHash: "",
   verifyResult: null,
 
@@ -104,6 +109,7 @@ export const useAppStore = create<AppState>((set) => ({
   isGeneratingHashes: false,
   isGeneratingMerkle: false,
   isAnchoring: false,
+  isValidatingQuality: false,
   isProcessingOCR: false,
   isVerifying: false,
   isSyncing: false,
@@ -121,6 +127,8 @@ export const useAppStore = create<AppState>((set) => ({
     set({ csvHeaders: headers, csvRecords: records }),
 
   setHashes: (hashes) => set({ hashes }),
+  
+  setHashesFromRecords: (hashes) => set({ hashes }),
 
   setMerkleData: (root, leaves) =>
     set({ merkleRoot: root, merkleLeaves: leaves }),
@@ -137,6 +145,8 @@ export const useAppStore = create<AppState>((set) => ({
   setVerifyFile: (file) => set({ verifyFile: file }),
 
   setOCRResult: (result) => set({ ocrResult: result }),
+
+  setQualityResult: (result) => set({ qualityResult: result }),
 
   setVerifyHash: (hash) => set({ verifyHash: hash }),
 
@@ -176,6 +186,7 @@ export const useAppStore = create<AppState>((set) => ({
     set({
       verifyFile: null,
       ocrResult: null,
+      qualityResult: null,
       verifyHash: "",
       verifyResult: null,
       error: null,

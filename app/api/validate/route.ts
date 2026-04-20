@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 
-const OCR_SERVER_URL = process.env.OCR_SERVER_URL || "https://final-ocr.onrender.com/api/v1/marksheet_data_extraction";
+const VALIDATE_SERVER_URL = process.env.VALIDATE_SERVER_URL || "https://final-ocr.onrender.com/api/v1/validate";
 
 export async function POST(req: Request) {
   try {
@@ -11,25 +11,23 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "No file provided" }, { status: 400 });
     }
 
-    // Ensure the file is correctly forwarded as a Blob to the Python server
     const bytes = await (file as any).arrayBuffer();
     const contentType = (file as any).type;
     const fileName = (file as any).name;
 
-    const ocrFormData = new FormData();
-    ocrFormData.append("file", new Blob([bytes], { type: contentType }), fileName);
+    const validateFormData = new FormData();
+    validateFormData.append("file", new Blob([bytes], { type: contentType }), fileName);
 
-    const response = await fetch(OCR_SERVER_URL, {
+    const response = await fetch(VALIDATE_SERVER_URL, {
       method: "POST",
-      body: ocrFormData,
+      body: validateFormData,
     });
-
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error("OCR Server Error:", errorText);
+      console.error("Validation Server Error:", errorText);
       return NextResponse.json(
-        { error: "OCR Server failed", details: errorText },
+        { error: "Validation Server failed", details: errorText },
         { status: response.status }
       );
     }
@@ -37,9 +35,9 @@ export async function POST(req: Request) {
     const data = await response.json();
     return NextResponse.json(data);
   } catch (error: any) {
-    console.error("OCR API Route Error:", error);
+    console.error("Validation API Route Error:", error);
     return NextResponse.json(
-      { error: "Internal Server Error in OCR proxy", details: error?.message },
+      { error: "Internal Server Error in Validation proxy", details: error?.message },
       { status: 500 }
     );
   }

@@ -1,9 +1,8 @@
 export interface Subject {
   code: string;
   title: string;
-  credits: string;
-  grade: string;
-  credits_point?: string;
+
+  credit_points?: string;
 }
 
 export function discoverSubjects(data: any): Subject[] {
@@ -16,7 +15,7 @@ export function discoverSubjects(data: any): Subject[] {
     Object.keys(data).forEach(key => {
       const trimmedKey = key.trim();
       // Match patterns like Course_1_Code, Course_1_Credit_Points, Course_1_Grade_Points
-      const match = trimmedKey.match(/(Subject|Course|Sub)[\s_]?(\d+)[\s_]?(Code|Title|Name|Number|Credits|Grade|Points|Credit_Points|Grade_Points)/i);
+      const match = trimmedKey.match(/(Subject|Course|Sub)[\s_]?(\d+)[\s_]?(Credits_Points|Credit_Points|Grade_Points|Code|Title|Name|Number|Credits|Grade|Points)/i);
       if (match) {
         const index = match[2];
         const type = match[3].toLowerCase();
@@ -26,12 +25,10 @@ export function discoverSubjects(data: any): Subject[] {
         const val = String(data[key] || "").trim();
         if (type === 'code' || type === 'number') discovered[index].code = val;
         if (type === 'title' || type === 'name') discovered[index].title = val;
-        if (type === 'credits') discovered[index].credits = val;
-        if (type === 'credit_points') discovered[index].credits_points = val;
 
-        if (type === 'grade' || type === 'grade_points' || (type === 'points' && !trimmedKey.toLowerCase().includes('credit'))) {
-          discovered[index].grade = val;
-        }
+        if (type === 'credit_points' || type === 'credits_points') discovered[index].credit_points = val;
+
+
       }
     });
 
@@ -40,9 +37,8 @@ export function discoverSubjects(data: any): Subject[] {
       .map(k => ({
         code: discovered[k].code || "N/A",
         title: discovered[k].title || "Unknown Subject",
-        credits: discovered[k].credits || "-",
-        grade: discovered[k].grade || "-",
-        credits_points: discovered[k].credits_points || "-"
+
+        credit_points: discovered[k].credit_points || "-"
       }))
       .filter(s => s.code !== "N/A" || s.title !== "Unknown Subject");
   }

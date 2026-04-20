@@ -3,7 +3,7 @@
 import { useCallback } from "react";
 import { useAppStore } from "@/store/useAppStore";
 import { generateStudentHash } from "@/lib/hash";
-import { processOCR, verifyDocument } from "@/services/api";
+import { processOCR, verifyDocument, validateQuality } from "@/services/api";
 
 import FileUploadDropzone from "@/components/FileUploadDropzone";
 import OCRResultCard from "@/components/OCRResultCard";
@@ -20,26 +20,38 @@ export default function VerifyPage() {
       store.setError(null);
       store.resetVerify();
       store.setVerifyFile(file);
-      store.setLoading("isProcessingOCR", true);
-
+      
       try {
+        // 1. Initial Quality Validation (PRE-PROCESSING)
+        store.setLoading("isValidatingQuality", true);
+        const quality = await validateQuality(file);
+        store.setQualityResult(quality);
+        store.addActivityLog("quality_validated", `Document quality validated. Result: ${quality.is_valid ? 'PASSED' : 'WARNING'}`);
+        
+        if (!quality.is_valid) {
+          // You could potentially stop here or just show a warning
+          console.warn("Document quality issues detected:", quality.message);
+        }
+        store.setLoading("isValidatingQuality", false);
+
+        // 2. OCR Extraction
+        store.setLoading("isProcessingOCR", true);
         const result = await processOCR(file);
         console.log("DEBUG: Raw OCR Result JSON ->", JSON.stringify(result, null, 2));
         
-        // 1. Recalculate hash in frontend (DETERMINISTIC)
-
+        // 3. Recalculate hash in frontend (DETERMINISTIC)
         const hash = generateStudentHash(result, store.hashConfig);
         store.setVerifyHash(hash);
 
-        // 2. Remove hash and raw_json but KEEP gpa for display
+        // 4. Remove hash but KEEP gpa for display
         const { keccak256_hash, raw_json, ...cleanResult } = result as any;
         store.setOCRResult(cleanResult);
-
         
         store.addActivityLog("ocr_complete", `OCR extraction complete. Generated Proof: ${hash.slice(0, 12)}...`);
       } catch (err) {
-        store.setError(err instanceof Error ? err.message : "OCR Service Unavailable");
+        store.setError(err instanceof Error ? err.message : "Service Unavailable");
       } finally {
+        store.setLoading("isValidatingQuality", false);
         store.setLoading("isProcessingOCR", false);
       }
     },
@@ -84,10 +96,46 @@ export default function VerifyPage() {
               currentFile={store.verifyFile}
               onClear={() => store.resetVerify()}
             />
+            {store.isValidatingQuality && (
+              <div style={{ marginTop: 16, display: 'flex', alignItems: 'center', gap: 12, justifyContent: 'center' }}>
+                <div style={{ width: 14, height: 14, borderRadius: '50%', background: '#ffc107', animation: 'pulseSoft 1s infinite' }}></div>
+                <span style={{ fontWeight: 600, fontSize: 13, color: '#856404' }}>Analyzing Document Quality...</span>
+              </div>
+            )}
             {store.isProcessingOCR && (
               <div style={{ marginTop: 16, display: 'flex', alignItems: 'center', gap: 12, justifyContent: 'center' }}>
                 <div style={{ width: 14, height: 14, borderRadius: '50%', background: '#609966', animation: 'pulseSoft 1s infinite' }}></div>
-                <span style={{ fontWeight: 600, fontSize: 13 }}>OCR Processing...</span>
+                <span style={{ fontWeight: 600, fontSize: 13 }}>Extracting Data Points...</span>
+              </div>
+            )}
+            {store.qualityResult && (
+              <div 
+                className="animate-slide-up"
+                style={{ 
+                  marginTop: 16, 
+                  padding: '12px 16px', 
+                  borderRadius: 12, 
+                  background: store.qualityResult.is_valid ? 'rgba(96,153,102,0.1)' : 'rgba(255,193,7,0.1)',
+                  border: `1px solid ${store.qualityResult.is_valid ? 'rgba(96,153,102,0.2)' : 'rgba(255,193,7,0.2)'}`,
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 12
+                }}
+              >
+                <div style={{ 
+                  width: 8, 
+                  height: 8, 
+                  borderRadius: '50%', 
+                  background: store.qualityResult.is_valid ? '#609966' : '#ffc107' 
+                }}></div>
+                <div style={{ flex: 1 }}>
+                  <p style={{ fontSize: 12, fontWeight: 800, margin: 0, color: store.qualityResult.is_valid ? '#609966' : '#856404' }}>
+                    QUALITY: {store.qualityResult.is_valid ? 'CERTIFIED HIGH' : 'LOW QUALITY WARNING'}
+                  </p>
+                  {store.qualityResult.message && (
+                    <p style={{ fontSize: 11, margin: 0, opacity: 0.7 }}>{store.qualityResult.message}</p>
+                  )}
+                </div>
               </div>
             )}
           </section>

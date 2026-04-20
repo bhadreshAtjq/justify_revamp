@@ -31,8 +31,8 @@ export function generateStudentHash(
     subjects: subjects.map(s => ({
       code: String(s.code || ""),
       title: String(s.title || ""),
-      credit_points: String(s.credits_points || "")
 
+      credit_points: String(s.credit_points || "")
     }))
   };
 

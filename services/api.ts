@@ -21,9 +21,18 @@ export interface OCRSubject {
 export interface OCRResponse {
   name: string;
   registration_no: string;
+  gpa: string;
+  keccak256_hash?: string;
   subjects: OCRSubject[];
   // Fallback for old format
   Registration_No?: string;
+}
+
+export interface QualityResponse {
+  is_valid: boolean;
+  score?: number;
+  details?: any;
+  message?: string;
 }
 
 export interface VerifyResponse {
@@ -74,51 +83,59 @@ export async function anchorRoot(
  * Process marksheet image/PDF through OCR
  */
 export async function processOCR(file: File): Promise<OCRResponse> {
-  try {
-    const formData = new FormData();
-    formData.append("file", file);
+  const formData = new FormData();
+  formData.append("file", file);
 
-    const response = await fetch(`${API_BASE}/api/ocr`, {
-      method: "POST",
-      body: formData,
-    });
+  const response = await fetch(`${API_BASE}/api/ocr`, {
+    method: "POST",
+    body: formData,
+  });
 
-    if (!response.ok) {
-      throw new Error(`OCR failed: ${response.statusText}`);
-    }
-
-    const data = await response.json();
-
-    // Explicitly remove sensitive/calculated fields as requested
-    const { gpa, keccak256_hash, raw_json, GPA, ...cleanData } = data;
-
-    return cleanData as OCRResponse;
-  } catch (error) {
-    console.warn("Using mock OCR response:", error);
-    return mockOCRResponse();
+  if (!response.ok) {
+    const errorText = await response.text().catch(() => "Unknown error");
+    throw new Error(`OCR failed: ${errorText}`);
   }
+
+  const data = await response.json();
+  return data as OCRResponse;
+}
+
+/**
+ * Validate document quality before OCR
+ */
+export async function validateQuality(file: File): Promise<QualityResponse> {
+  const formData = new FormData();
+  formData.append("file", file);
+
+  const response = await fetch(`${API_BASE}/api/validate`, {
+    method: "POST",
+    body: formData,
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text().catch(() => "Unknown error");
+    throw new Error(`Quality Validation failed: ${errorText}`);
+  }
+
+  return await response.json();
 }
 
 /**
  * Verify a document hash against the blockchain
  */
 export async function verifyDocument(docHash: string): Promise<VerifyResponse> {
-  try {
-    const response = await fetch(`${API_BASE}/api/verify`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ docHash }),
-    });
+  const response = await fetch(`${API_BASE}/api/verify`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ docHash }),
+  });
 
-    if (!response.ok) {
-      throw new Error(`Verification failed: ${response.statusText}`);
-    }
-
-    return await response.json();
-  } catch (error) {
-    console.warn("Using mock verify response:", error);
-    return mockVerifyResponse();
+  if (!response.ok) {
+    const errorText = await response.text().catch(() => "Unknown error");
+    throw new Error(`Verification failed: ${errorText}`);
   }
+
+  return await response.json();
 }
 
 /**
@@ -160,38 +177,3 @@ export async function fetchRecordsFromDB(): Promise<any[]> {
   return await response.json();
 }
 
-function mockAnchorResponse(merkleRoot: string): AnchorResponse {
-  return {
-    txHash: `0x${merkleRoot.slice(0, 64)}`,
-    blockNumber: 18452930,
-    status: "confirmed",
-  };
-}
-
-function mockOCRResponse(): OCRResponse {
-  return {
-    name: "PATEL RITESHKUMAR GIRISHBHAI",
-    registration_no: "2072116024",
-    subjects: [
-      { code: "ABM 517", title: "AGRICULTURAL MARKETING MANAGEMENT", credits: "2", grade: "6.5" },
-      { code: "ABM 521", title: "FARM BUSINESS MANAGEMENT", credits: "2", grade: "6.4" },
-      { code: "ABM 526", title: "INTERNATIONAL TRADE & SUSTAINABILITY", credits: "2", grade: "7.2" },
-      { code: "ABM 528", title: "GOVERNANCE", credits: "2", grade: "6.4" },
-      { code: "ABM 530", title: "AGRIBUSINESS FINANCIAL MANAGEMENT", credits: "2", grade: "7.0" },
-      { code: "ABM 532", title: "MANAGEMENT OF AGRICULTURAL INPUT MARKETING", credits: "2", grade: "8.0" },
-      { code: "ABM 537", title: "AGRI-SUPPLY CHAIN MANAGEMENT", credits: "2", grade: "7.0" },
-      { code: "PGS 505", title: "DISASTER MANAGEMENT", credits: "1", grade: "S" },
-    ],
-    gpa: "6.93",
-    keccak256_hash: "7e93a7b62af66b70e26d9d8735adbcf7b821d632c597812f9200a88575ca2237"
-  };
-}
-
-function mockVerifyResponse(): VerifyResponse {
-  return {
-    valid: true,
-    anchored: true,
-    revoked: false,
-    block: "18234567",
-  };
-}
