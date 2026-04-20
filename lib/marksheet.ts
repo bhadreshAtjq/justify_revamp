@@ -3,10 +3,11 @@ export interface Subject {
   title: string;
   credits: string;
   grade: string;
+  credits_point?: string;
 }
 
 export function discoverSubjects(data: any): Subject[] {
-  let list: Subject[] = typeof data.subjects === 'string' 
+  let list: Subject[] = typeof data.subjects === 'string'
     ? (data.subjects.trim().startsWith('[') ? JSON.parse(data.subjects) : [])
     : data.subjects || [];
 
@@ -14,19 +15,21 @@ export function discoverSubjects(data: any): Subject[] {
     const discovered: Record<string, Partial<Subject>> = {};
     Object.keys(data).forEach(key => {
       const trimmedKey = key.trim();
-      const match = trimmedKey.match(/(Subject|Course|Sub)[\s_]?(\d+)[\s_]?(Code|Title|Name|Number|Credits|Grade|Points)/i);
+      // Match patterns like Course_1_Code, Course_1_Credit_Points, Course_1_Grade_Points
+      const match = trimmedKey.match(/(Subject|Course|Sub)[\s_]?(\d+)[\s_]?(Code|Title|Name|Number|Credits|Grade|Points|Credit_Points|Grade_Points)/i);
       if (match) {
         const index = match[2];
         const type = match[3].toLowerCase();
-        
+
         if (!discovered[index]) discovered[index] = {};
-        
+
         const val = String(data[key] || "").trim();
         if (type === 'code' || type === 'number') discovered[index].code = val;
-        if (type === 'title' || type === 'name') discovered[index].title = val; 
+        if (type === 'title' || type === 'name') discovered[index].title = val;
         if (type === 'credits') discovered[index].credits = val;
-        
-        if (type === 'grade' || (type === 'points' && !trimmedKey.toLowerCase().includes('credit'))) {
+        if (type === 'credit_points') discovered[index].credits_points = val;
+
+        if (type === 'grade' || type === 'grade_points' || (type === 'points' && !trimmedKey.toLowerCase().includes('credit'))) {
           discovered[index].grade = val;
         }
       }
@@ -38,7 +41,8 @@ export function discoverSubjects(data: any): Subject[] {
         code: discovered[k].code || "N/A",
         title: discovered[k].title || "Unknown Subject",
         credits: discovered[k].credits || "-",
-        grade: discovered[k].grade || "-"
+        grade: discovered[k].grade || "-",
+        credits_points: discovered[k].credits_points || "-"
       }))
       .filter(s => s.code !== "N/A" || s.title !== "Unknown Subject");
   }
