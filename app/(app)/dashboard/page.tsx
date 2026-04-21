@@ -40,7 +40,7 @@ export default function DashboardPage() {
         // Database Synchronization (Background)
         store.setLoading("isSyncing", true);
         try {
-          await syncRecordsToDB(records);
+          await syncRecordsToDB(records, uploadType);
           store.addActivityLog("csv_uploaded", "PostgreSQL Synchronization Successful");
         } catch (dbErr) {
           console.error("DB Sync Error:", dbErr);
@@ -56,7 +56,7 @@ export default function DashboardPage() {
         store.setLoading("isParsingCSV", false);
       }
     },
-    [store]
+    [store, uploadType]
   );
 
   const handleGenerateHashes = useCallback(() => {

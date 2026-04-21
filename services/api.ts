@@ -139,11 +139,11 @@ export async function verifyDocument(docHash: string): Promise<VerifyResponse> {
 /**
  * Sync student records to DB
  */
-export async function syncRecordsToDB(students: any[]): Promise<{ count: number }> {
+export async function syncRecordsToDB(students: any[], type: string = "marksheet"): Promise<{ count: number }> {
   const response = await fetch(`${API_BASE}/api/records`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ students }),
+    body: JSON.stringify({ students, type }),
   });
   if (!response.ok) {
     const errorData = await response.json().catch(() => ({}));

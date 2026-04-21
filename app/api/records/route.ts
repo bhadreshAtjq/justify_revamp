@@ -22,7 +22,7 @@ export async function GET() {
 
 export async function POST(req: Request) {
   try {
-    const { students } = await req.json();
+    const { students, type = "marksheet" } = await req.json();
 
     if (!Array.isArray(students)) {
       return NextResponse.json({ error: "Invalid data format" }, { status: 400 });
@@ -41,7 +41,7 @@ export async function POST(req: Request) {
       const meta = mapStudentMetadata(s);
       
       // Use the standard strategy to generate the Merkle Leaf
-      const ingestionHash = s.hash || s.keccak256_hash || generateStudentHash(s, defaultStrategy);
+      const ingestionHash = s.hash || s.keccak256_hash || generateStudentHash(s, defaultStrategy, type);
 
       // Add leaf to JSON data for self-contained auditability
       s.merkle_leaf = ingestionHash;

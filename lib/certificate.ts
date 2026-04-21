@@ -2,15 +2,15 @@ export function mapCertificatePayload(data: any): any {
   // If the data is already structured (e.g. from OCR JSON response), return it directly
   if (data.certificate_no && data.degree) {
     return {
-      certificate_no: data.certificate_no || "",
-      no: data.no || "",
-      university: data.university || data.University || "Junagadh Agricultural University",
-      name: data.name || data.Student_Name || data["Student Name"] || "",
-      degree: data.degree || data.Degree || "",
-      ogpa: data.ogpa || data.Overall_GPA || data.OGPA || data.gpa || "",
-      year: data.year || data.Year || data.academic_year || "",
-      date: data.date || data.Date || "",
-      class_division: data.class_division || data.Class || data.class || ""
+      certificate_no: String(data.certificate_no || ""),
+      no: String(data.no || ""),
+      university: String(data.university || data.University || "Junagadh Agricultural University"),
+      name: String(data.name || data.Student_Name || data["Student Name"] || ""),
+      degree: String(data.degree || data.Degree || ""),
+      ogpa: String(data.ogpa || data.Overall_GPA || data.OGPA || data.gpa || ""),
+      year: String(data.year || data.Year || data.academic_year || ""),
+      date: String(data.date || data.Date || ""),
+      class_division: String(data.class_division || data.Class || data.class || "")
     };
   }
 

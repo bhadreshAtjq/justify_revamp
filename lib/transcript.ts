@@ -4,8 +4,32 @@
  * Matches the requested canonical structure for blockchain hashing.
  */
 export function mapTranscriptPayload(data: any): any {
+  // If the data is already structured properly from the OCR JSON response,
+  // we MUST mathematically reconstruct it key-by-key to force deterministic ordering for the hashing engine.
   if (data.years && Array.isArray(data.years) && data.years.length > 0) {
-    return data;
+    return {
+      registration_no: data.registration_no || data.Registration_No || "",
+      name: data.name || data.Student_Name || "",
+      degree: data.degree || data.Degree || "",
+      admission_year: data.admission_year || "",
+      completion_year: data.completion_year || "",
+      ogpa: String(data.ogpa || data.Overall_GPA || ""),
+      result: String(data.result || ""),
+      class_division: String(data.class_division || ""),
+      years: data.years.map((y: any) => ({
+        year: String(y.year || ""),
+        semesters: (y.semesters || []).map((s: any) => ({
+          semester: String(s.semester || ""),
+          gpa: String(s.gpa || "0.00"),
+          cgpa: String(s.cgpa || "0.00"),
+          courses: (s.courses || []).map((c: any) => ({
+            course_number: String(c.course_number || ""),
+            title: String(c.title || ""),
+            credit_points: String(c.credit_points || "")
+          }))
+        }))
+      }))
+    };
   }
   const findVal = (patterns: string[]) => {
     for (const p of patterns) {
@@ -45,9 +69,9 @@ export function mapTranscriptPayload(data: any): any {
     }
 
     const semester: any = {
-      semester: semName,
-      gpa: data[`${semPrefix}GPA`] || "0.00",
-      cgpa: data[`${semPrefix}CGPA`] || "0.00",
+      semester: String(semName),
+      gpa: String(data[`${semPrefix}GPA`] || "0.00"),
+      cgpa: String(data[`${semPrefix}CGPA`] || "0.00"),
       courses: []
     };
 
@@ -60,9 +84,9 @@ export function mapTranscriptPayload(data: any): any {
       if (!courseCode && !courseName) continue;
 
       semester.courses.push({
-        course_number: courseCode || "",
-        title: courseName || "",
-        credit_points: creditPoints || ""
+        course_number: String(courseCode || ""),
+        title: String(courseName || ""),
+        credit_points: String(creditPoints || "")
       });
     }
 

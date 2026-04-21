@@ -76,10 +76,9 @@ export default function CSVPreviewTable({
       });
 
       pdf.addImage(imgData, "PNG", 0, 0, pdfWidth, pdfHeight);
-      const name = (selectedStudent.name || selectedStudent.Student_Name || "document").replace(/\s+/g, '_');
-      pdf.save(`${name}_${type}.pdf`);
-
-      // ALSO trigger the raw JSON metadata download for strict matching parity parity!
+      // Mathematically embed the absolute strict JSON directly into the PDF text layer.
+      // This allows hybrid OCR extractors in the Python backend to rip the exact payload
+      // without relying on error-prone visual-LLM hallucinations!
       let exportJson = selectedStudent;
       if (type === "transcript") {
         const { mapTranscriptPayload } = await import("@/lib/transcript");
@@ -94,13 +93,15 @@ export default function CSVPreviewTable({
           subjects: discoverSubjects(selectedStudent)
         };
       }
-      
-      const jsonBlob = new Blob([JSON.stringify(exportJson, null, 2)], { type: "application/json" });
-      const jsonUrl = URL.createObjectURL(jsonBlob);
-      const jsonLink = document.createElement("a");
-      jsonLink.href = jsonUrl;
-      jsonLink.download = `${name}_${type}_metadata.json`;
-      jsonLink.click();
+
+      pdf.addPage();
+      pdf.setFontSize(4);
+      pdf.setTextColor(255, 255, 255); // Invisible to human eye
+      const textLines = pdf.splitTextToSize(JSON.stringify(exportJson), pdfWidth - 20);
+      pdf.text(textLines, 10, 10);
+
+      const name = (selectedStudent.name || selectedStudent.Student_Name || "document").replace(/\s+/g, '_');
+      pdf.save(`${name}_${type}.pdf`);
 
     } catch (err) {
       console.error("PDF Export failed:", err);
