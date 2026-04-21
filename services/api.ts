@@ -77,11 +77,12 @@ export async function anchorRoot(
 }
 
 /**
- * Process marksheet image/PDF through OCR
+ * Process document image/PDF through OCR based on document type.
  */
-export async function processOCR(file: File): Promise<OCRResponse> {
+export async function processOCR(file: File, type: string = "marksheet"): Promise<OCRResponse> {
   const formData = new FormData();
   formData.append("file", file);
+  formData.append("type", type);
 
   const response = await fetch(`${API_BASE}/api/ocr`, {
     method: "POST",

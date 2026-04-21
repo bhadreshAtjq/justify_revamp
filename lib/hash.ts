@@ -1,5 +1,7 @@
 
 import { discoverSubjects, mapStudentMetadata } from "./marksheet";
+import { mapTranscriptPayload } from "./transcript";
+import { mapCertificatePayload } from "./certificate";
 
 import { keccak256 } from "web3-utils";
 
@@ -16,28 +18,35 @@ export interface HashStrategy {
  */
 export function generateStudentHash(
   record: Record<string, any>,
-  strategy: HashStrategy
+  strategy: HashStrategy,
+  type: string = "marksheet"
 ): string {
-  // 1. Extract values with strict prioritization for the Render API format
-  const regNo = record.registration_no || record.Registration_No || mapStudentMetadata(record).regNo;
-  const name = record.name || record.Student_Name || mapStudentMetadata(record).name;
-  const gpa = record.gpa || record.GPA || mapStudentMetadata(record).gpa;
-  
-  // 2. Extract subjects - either from structured 'subjects' array or discovered from flat keys
-  const rawSubjects = Array.isArray(record.subjects) ? record.subjects : discoverSubjects(record);
+  let payload: any;
 
-  // ===== CANONICAL JSON — MUST match Python exactly =====
-  // Payload: registration_no, name, gpa, subjects (code, title, credit_points)
-  const payload = {
-    registration_no: String(regNo || ""),
-    name: String(name || ""),
-    gpa: String(gpa || ""),
-    subjects: rawSubjects.map((s: any) => ({
-      code: String(s.code || ""),
-      title: String(s.title || ""),
-      credit_points: String(s.credit_points || s.Credit_Points || "")
-    }))
-  };
+  if (type === "transcript") {
+    // 1. Full Transcript Structured Payload
+    payload = mapTranscriptPayload(record);
+  } else if (type === "certificate") {
+    // 2. Certificate Payload
+    payload = mapCertificatePayload(record);
+  } else {
+    // 3. Marksheet/Standard Payload
+    const regNo = record.registration_no || record.Registration_No || mapStudentMetadata(record).regNo;
+    const name = record.name || record.Student_Name || mapStudentMetadata(record).name;
+    const gpa = record.gpa || record.GPA || mapStudentMetadata(record).gpa;
+    const rawSubjects = Array.isArray(record.subjects) ? record.subjects : discoverSubjects(record);
+
+    payload = {
+      registration_no: String(regNo || ""),
+      name: String(name || ""),
+      gpa: String(gpa || ""),
+      subjects: rawSubjects.map((s: any) => ({
+        code: String(s.code || ""),
+        title: String(s.title || ""),
+        credit_points: String(s.credit_points || s.Credit_Points || "")
+      }))
+    };
+  }
 
   const combined = JSON.stringify(payload);
 
@@ -53,17 +62,18 @@ export function generateStudentHash(
  */
 export function generateHashesFromRecords(
   records: Record<string, any>[],
-  strategy: HashStrategy
+  strategy: HashStrategy,
+  type: string = "marksheet"
 ): { hash: string; registrationNo: string; index: number }[] {
   return records.map((record, index) => {
     const registrationNo =
-      record["registration_no"] ||
       record["Registration_No"] ||
+      record["registration_no"] ||
       record["RegistrationNo"] ||
       record["Reg_No"] ||
       `UNNAMED_${index}`;
 
-    const hash = generateStudentHash(record, strategy);
+    const hash = generateStudentHash(record, strategy, type);
 
     return {
       hash,

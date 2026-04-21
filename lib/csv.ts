@@ -68,7 +68,7 @@ export function validateCSVForHashing(headers: string[]): {
 
   const requiredMappings = [
     { key: "registration_no", aliases: ["registration_no", "registrationno", "reg_no"] },
-    { key: "gpa", aliases: ["gpa"] },
+    { key: "gpa", aliases: ["gpa", "overall_gpa"] },
     {
       key: "total_credit_points",
       aliases: ["total_credit_points", "totalcreditpoints", "total_credits"],

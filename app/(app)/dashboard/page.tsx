@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback } from "react";
+import { useCallback, useState } from "react";
 import { useAppStore } from "@/store/useAppStore";
 import { parseCSV, validateCSVForHashing } from "@/lib/csv";
 import { generateHashesFromRecords } from "@/lib/hash";
@@ -19,6 +19,7 @@ import { syncRecordsToDB, fetchRecordsFromDB } from "@/services/api";
 
 export default function DashboardPage() {
   const store = useAppStore();
+  const [uploadType, setUploadType] = useState<"marksheet" | "certificate" | "transcript">("marksheet");
 
   const handleCSVUpload = useCallback(
     async (file: File) => {
@@ -62,7 +63,7 @@ export default function DashboardPage() {
     store.setError(null);
     store.setLoading("isGeneratingHashes", true);
     try {
-      const hashes = generateHashesFromRecords(store.csvRecords, store.hashConfig);
+      const hashes = generateHashesFromRecords(store.csvRecords, store.hashConfig, uploadType);
       store.setHashes(hashes);
       store.addActivityLog("hashes_generated", `Proofs generated using strategy: [${Object.entries(store.hashConfig).filter(([_, v]) => v).map(([k]) => k.replace('include', '')).join(', ')}]`);
     } catch (err) {
@@ -70,7 +71,7 @@ export default function DashboardPage() {
     } finally {
       store.setLoading("isGeneratingHashes", false);
     }
-  }, [store]);
+  }, [store, uploadType]);
 
   const handleGenerateMerkle = useCallback(() => {
     store.setError(null);
@@ -148,11 +149,35 @@ export default function DashboardPage() {
 
       <div style={{ display: 'grid', gridTemplateColumns: '1.5fr 1fr', gap: 40, alignItems: 'start' }}>
         <div className="space-y-6">
+          <div className="glass-card" style={{ padding: '8px', display: 'flex', gap: '8px', marginBottom: '16px' }}>
+            <button
+              onClick={() => setUploadType("marksheet")}
+              className={`btn-premium ${uploadType === "marksheet" ? "btn-solid" : "btn-outline"}`}
+              style={{ flex: 1, padding: '12px' }}
+            >
+              Marksheet
+            </button>
+            <button
+              onClick={() => setUploadType("certificate")}
+              className={`btn-premium ${uploadType === "certificate" ? "btn-solid" : "btn-outline"}`}
+              style={{ flex: 1, padding: '12px' }}
+            >
+              Certificate
+            </button>
+            <button
+              onClick={() => setUploadType("transcript")}
+              className={`btn-premium ${uploadType === "transcript" ? "btn-solid" : "btn-outline"}`}
+              style={{ flex: 1, padding: '12px' }}
+            >
+              Transcript
+            </button>
+          </div>
+
           <section>
-            <div className="section-meta">STEP 01 — DATA RECEPTION</div>
+            <div className="section-meta">STEP 01 — DATA RECEPTION ({uploadType.toUpperCase()})</div>
             <FileUploadDropzone
               accept=".csv"
-              acceptLabel="CSV Records Only"
+              acceptLabel={`${uploadType.charAt(0).toUpperCase() + uploadType.slice(1)} CSV Records Only`}
               onFileSelect={handleCSVUpload}
               currentFile={store.csvFile}
               onClear={() => store.resetDashboard()}
@@ -162,7 +187,7 @@ export default function DashboardPage() {
           {store.csvHeaders.length > 0 && (
             <section>
               <div className="section-meta">STEP 02 — RECORD AUDIT</div>
-              <CSVPreviewTable headers={store.csvHeaders} records={store.csvRecords} fileName={""} />
+              <CSVPreviewTable headers={store.csvHeaders} records={store.csvRecords} fileName={""} type={uploadType} />
             </section>
           )}
 

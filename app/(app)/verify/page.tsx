@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback } from "react";
+import { useCallback, useState } from "react";
 import { useAppStore } from "@/store/useAppStore";
 import { generateStudentHash } from "@/lib/hash";
 import { processOCR, verifyDocument, validateQuality } from "@/services/api";
@@ -14,6 +14,7 @@ import { FaShieldAlt, FaTerminal } from "react-icons/fa";
 
 export default function VerifyPage() {
   const store = useAppStore();
+  const [verifyType, setVerifyType] = useState<"marksheet" | "certificate" | "transcript">("marksheet");
 
   const handleFileUpload = useCallback(
     async (file: File) => {
@@ -22,16 +23,20 @@ export default function VerifyPage() {
       store.setVerifyFile(file);
       
       try {
-        // 1. Initial Quality Validation
-        store.setLoading("isValidatingQuality", true);
-        const quality = await validateQuality(file);
-        store.setQualityResult(quality);
-        store.addActivityLog("quality_validated", `Quality Check: ${quality.is_valid ? 'PASSED' : 'LOW QUALITY'}`);
-        store.setLoading("isValidatingQuality", false);
+        // 1. Initial Quality Validation (Skip for transcripts)
+        if (verifyType !== "transcript") {
+          store.setLoading("isValidatingQuality", true);
+          const quality = await validateQuality(file);
+          store.setQualityResult(quality);
+          store.addActivityLog("quality_validated", `Quality Check: ${quality.is_valid ? 'PASSED' : 'LOW QUALITY'}`);
+          store.setLoading("isValidatingQuality", false);
+        } else {
+          store.setQualityResult({ is_valid: true, message: "Transcript processing includes inline validation" });
+        }
 
         // 2. OCR Extraction
         store.setLoading("isProcessingOCR", true);
-        const result = await processOCR(file);
+        const result = await processOCR(file, verifyType);
         console.log("DEBUG: Raw OCR Result JSON ->", JSON.stringify(result, null, 2));
         
         // Ensure result fields are present
@@ -40,8 +45,8 @@ export default function VerifyPage() {
         }
 
         // 3. Recalculate hash in frontend (DETERMINISTIC)
-        const hash = generateStudentHash(result, store.hashConfig);
-        console.log("DEBUG: Final Generated Hash ->", hash);
+        const hash = generateStudentHash(result, store.hashConfig, verifyType);
+        console.log(`DEBUG: Final Generated Hash (${verifyType}) ->`, hash);
         store.setVerifyHash(hash);
 
         // 4. Set result for display
@@ -55,7 +60,7 @@ export default function VerifyPage() {
         store.setLoading("isProcessingOCR", false);
       }
     },
-    [store]
+    [store, verifyType]
   );
 
   const handleVerify = useCallback(async () => {
@@ -81,8 +86,32 @@ export default function VerifyPage() {
     <div className="animate-slide-up">
       <div className="page-header">
         <div className="section-meta">VERIFICATION PORTAL</div>
-        <h1 className="page-title">Marksheet Authenticator</h1>
-        <p className="page-subtitle">Instantly verify the integrity of an academic transcript against blockchain anchors.</p>
+        <h1 className="page-title">{verifyType.charAt(0).toUpperCase() + verifyType.slice(1)} Authenticator</h1>
+        <p className="page-subtitle">Instantly verify the integrity of an academic {verifyType} against blockchain anchors.</p>
+      </div>
+
+      <div className="glass-card" style={{ padding: '8px', display: 'flex', gap: '8px', marginBottom: '32px', maxWidth: '600px' }}>
+        <button
+          onClick={() => { setVerifyType("marksheet"); store.resetVerify(); }}
+          className={`btn-premium ${verifyType === "marksheet" ? "btn-solid" : "btn-outline"}`}
+          style={{ flex: 1, padding: '10px' }}
+        >
+          Marksheet
+        </button>
+        <button
+          onClick={() => { setVerifyType("certificate"); store.resetVerify(); }}
+          className={`btn-premium ${verifyType === "certificate" ? "btn-solid" : "btn-outline"}`}
+          style={{ flex: 1, padding: '10px' }}
+        >
+          Certificate
+        </button>
+        <button
+          onClick={() => { setVerifyType("transcript"); store.resetVerify(); }}
+          className={`btn-premium ${verifyType === "transcript" ? "btn-solid" : "btn-outline"}`}
+          style={{ flex: 1, padding: '10px' }}
+        >
+          Transcript
+        </button>
       </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: 40, alignItems: 'start' }}>
@@ -91,7 +120,7 @@ export default function VerifyPage() {
             <div className="section-meta">STEP 01 — DOCUMENT INPUT</div>
             <FileUploadDropzone
               accept="image/*,.pdf"
-              acceptLabel="Transcript Scan (PNG/PDF)"
+              acceptLabel={`${verifyType.charAt(0).toUpperCase() + verifyType.slice(1)} Scan (PNG/PDF)`}
               onFileSelect={handleFileUpload}
               currentFile={store.verifyFile}
               onClear={() => store.resetVerify()}
@@ -143,7 +172,7 @@ export default function VerifyPage() {
           {store.ocrResult && (
             <section className="animate-slide-up">
               <div className="section-meta">STEP 02 — DATA SYNTHESIS</div>
-              <OCRResultCard result={store.ocrResult} />
+              <OCRResultCard result={store.ocrResult} type={verifyType} />
               
               <div className="root-emphasized" style={{ marginTop: 24, padding: 24, background: '#40513B' }}>
                 <p className="root-label" style={{ marginBottom: 10 }}><FaTerminal /> GENERATED DOCUMENT HASH</p>
@@ -181,7 +210,7 @@ export default function VerifyPage() {
             </h3>
             <ul style={{ fontSize: 13, opacity: 0.7, paddingLeft: 16, lineHeight: 1.8 }}>
               <li>Ensure the scan is clear and well-lit.</li>
-              <li>Hash is calculated from Reg No, GPA, and Credits.</li>
+              <li>Hash is calculated from {verifyType === "transcript" ? "the full academic history" : "Reg No, GPA, and Credits"}.</li>
               <li>Verification checks if this hash exists in any anchored Merkle Tree.</li>
             </ul>
           </div>

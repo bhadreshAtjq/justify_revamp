@@ -14,7 +14,9 @@ import {
   FaFilePdf
 } from "react-icons/fa";
 import MarksheetTemplate from "./MarksheetTemplate";
+import TranscriptTemplate from "./TranscriptTemplate";
 import { discoverSubjects, mapStudentMetadata } from "@/lib/marksheet";
+import { mapTranscriptPayload } from "@/lib/transcript";
 import { generateStudentHash } from "@/lib/hash";
 import { useAppStore } from "@/store/useAppStore";
 import jsPDF from "jspdf";
@@ -24,12 +26,14 @@ interface CSVPreviewTableProps {
   headers: string[];
   records: Record<string, string>[];
   fileName: string;
+  type?: string;
 }
 
 export default function CSVPreviewTable({
   headers,
   records,
   fileName,
+  type = "marksheet"
 }: CSVPreviewTableProps) {
   const store = useAppStore();
   const [currentPage, setCurrentPage] = useState(1);
@@ -44,30 +48,60 @@ export default function CSVPreviewTable({
     setIsGenerating(true);
     
     try {
-      const input = document.getElementById("marksheet-pdf");
+      const templateId = type === "transcript" ? "transcript-pdf" : "marksheet-pdf";
+      const input = document.getElementById(templateId);
       if (!input) throw new Error("Template not found");
 
       const canvas = await html2canvas(input, {
         scale: 2,
         useCORS: true,
         logging: false,
-        backgroundColor: "#ffffff"
+        backgroundColor: "#ffffff",
+        windowHeight: input.scrollHeight,
+        scrollY: 0
       });
 
       const imgData = canvas.toDataURL("image/png");
+      
+      // Calculate proportions for dynamic PDF dimensions rather than enforced A4
+      const canvasWidth = canvas.width;
+      const canvasHeight = canvas.height;
+      const pdfWidth = 595.28; // Standard A4 width reference in points
+      const pdfHeight = (canvasHeight * pdfWidth) / canvasWidth;
+
       const pdf = new jsPDF({
         orientation: "portrait",
         unit: "pt",
-        format: "a4"
+        format: [pdfWidth, pdfHeight]
       });
 
-      const imgProps = pdf.getImageProperties(imgData);
-      const pdfWidth = pdf.internal.pageSize.getWidth();
-      const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
-
       pdf.addImage(imgData, "PNG", 0, 0, pdfWidth, pdfHeight);
-      const name = (selectedStudent.name || selectedStudent.Student_Name || "marksheet").replace(/\s+/g, '_');
-      pdf.save(`${name}_marksheet.pdf`);
+      const name = (selectedStudent.name || selectedStudent.Student_Name || "document").replace(/\s+/g, '_');
+      pdf.save(`${name}_${type}.pdf`);
+
+      // ALSO trigger the raw JSON metadata download for strict matching parity parity!
+      let exportJson = selectedStudent;
+      if (type === "transcript") {
+        const { mapTranscriptPayload } = await import("@/lib/transcript");
+        exportJson = mapTranscriptPayload(selectedStudent);
+      } else if (type === "certificate") {
+        const { mapCertificatePayload } = await import("@/lib/certificate");
+        exportJson = mapCertificatePayload(selectedStudent);
+      } else {
+        const { mapStudentMetadata, discoverSubjects } = await import("@/lib/marksheet");
+        exportJson = {
+          ...mapStudentMetadata(selectedStudent),
+          subjects: discoverSubjects(selectedStudent)
+        };
+      }
+      
+      const jsonBlob = new Blob([JSON.stringify(exportJson, null, 2)], { type: "application/json" });
+      const jsonUrl = URL.createObjectURL(jsonBlob);
+      const jsonLink = document.createElement("a");
+      jsonLink.href = jsonUrl;
+      jsonLink.download = `${name}_${type}_metadata.json`;
+      jsonLink.click();
+
     } catch (err) {
       console.error("PDF Export failed:", err);
       alert("Failed to generate PDF. Please try again.");
@@ -200,7 +234,7 @@ export default function CSVPreviewTable({
             <div style={{ padding: '16px 24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #eee' }}>
               <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
                 <FaFilePdf style={{ color: '#d32f2f', fontSize: 24 }} />
-                <h3 style={{ margin: 0, fontSize: 16 }}>Blockchain Verified Marksheet</h3>
+                <h3 style={{ margin: 0, fontSize: 16 }}>Blockchain Verified {type === "transcript" ? "Transcript" : "Marksheet"}</h3>
               </div>
               <div style={{ display: 'flex', gap: 8 }}>
                 <button 
@@ -217,22 +251,26 @@ export default function CSVPreviewTable({
               </div>
             </div>
             <div style={{ flex: 1, overflowY: 'auto', background: '#f5f5f5', padding: '20px' }}>
-              <MarksheetTemplate data={{
-                ...selectedStudent,
-                name: selectedStudent.name || selectedStudent.Student_Name || selectedStudent.Full_Name || "Unknown Student",
-                registration_no: selectedStudent.registration_no || selectedStudent.Registration_No || "N/A",
-                gpa: selectedStudent.gpa || selectedStudent.GPA || "0.00",
-                faculty: selectedStudent.faculty || selectedStudent.Faculty,
-                degree: selectedStudent.degree || selectedStudent.Degree || selectedStudent.Degree_Course,
-                semester: selectedStudent.semester || selectedStudent.Semester,
-                major: selectedStudent.major || selectedStudent.Major_Subject,
-                minor: selectedStudent.minor || selectedStudent.Minor_Subject,
-                college: selectedStudent.college || selectedStudent.Name_of_College || selectedStudent.College,
-                academic_year: selectedStudent.academic_year || selectedStudent.Academic_Year,
-                examination: selectedStudent.examination || selectedStudent.Examination_held_in,
-                status: selectedStudent.Status || selectedStudent.status,
-                subjects: selectedStudent.subjects || []
-              }} />
+              {type === "transcript" ? (
+                <TranscriptTemplate data={selectedStudent} />
+              ) : (
+                <MarksheetTemplate data={{
+                  ...selectedStudent,
+                  name: selectedStudent.name || selectedStudent.Student_Name || selectedStudent.Full_Name || "Unknown Student",
+                  registration_no: selectedStudent.registration_no || selectedStudent.Registration_No || "N/A",
+                  gpa: selectedStudent.gpa || selectedStudent.GPA || "0.00",
+                  faculty: selectedStudent.faculty || selectedStudent.Faculty,
+                  degree: selectedStudent.degree || selectedStudent.Degree || selectedStudent.Degree_Course,
+                  semester: selectedStudent.semester || selectedStudent.Semester,
+                  major: selectedStudent.major || selectedStudent.Major_Subject,
+                  minor: selectedStudent.minor || selectedStudent.Minor_Subject,
+                  college: selectedStudent.college || selectedStudent.Name_of_College || selectedStudent.College,
+                  academic_year: selectedStudent.academic_year || selectedStudent.Academic_Year,
+                  examination: selectedStudent.examination || selectedStudent.Examination_held_in,
+                  status: selectedStudent.Status || selectedStudent.status,
+                  subjects: selectedStudent.subjects || []
+                }} />
+              )}
             </div>
           </div>
         </div>

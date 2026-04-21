@@ -88,7 +88,7 @@ export default function FileUploadDropzone({
         <div className="dropzone-circle">
           <FaUpload />
         </div>
-        <h3 style={{ marginBottom: 8 }}>{isDragActive ? "Drop to Upload" : "Select Marksheet / CSV"}</h3>
+        <h3 style={{ marginBottom: 8 }}>{isDragActive ? "Drop to Upload" : acceptLabel.replace('Only', '')}</h3>
         <p style={{ opacity: 0.6 }}>{acceptLabel} (Max 10MB)</p>
       </div>
     </div>
