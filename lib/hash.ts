@@ -34,18 +34,21 @@ export function generateStudentHash(
     const regNo = record.registration_no || record.Registration_No || mapStudentMetadata(record).regNo;
     const name = record.name || record.Student_Name || mapStudentMetadata(record).name;
     const gpa = record.gpa || record.GPA || mapStudentMetadata(record).gpa;
+    const branch = record.branch || record.Branch || record.major || mapStudentMetadata(record).branch || "";
     const rawSubjects = Array.isArray(record.subjects) ? record.subjects : discoverSubjects(record);
 
     payload = {
       registration_no: String(regNo || ""),
       name: String(name || ""),
       gpa: String(gpa || ""),
+      branch: String(branch || ""),
       subjects: rawSubjects.map((s: any) => ({
         code: String(s.code || ""),
         title: String(s.title || ""),
         credit_points: String(s.credit_points || s.Credit_Points || "")
       }))
     };
+
   }
 
   const combined = JSON.stringify(payload);
@@ -71,6 +74,9 @@ export function generateHashesFromRecords(
       record["registration_no"] ||
       record["RegistrationNo"] ||
       record["Reg_No"] ||
+      record["Certificate_No"] ||
+      record["Certificate No"] ||
+      record["no"] ||
       `UNNAMED_${index}`;
 
     const hash = generateStudentHash(record, strategy, type);

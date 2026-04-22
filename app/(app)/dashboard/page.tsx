@@ -30,7 +30,7 @@ export default function DashboardPage() {
       try {
         const text = await file.text();
         const { headers, records } = parseCSV(text);
-        const validation = validateCSVForHashing(headers);
+        const validation = validateCSVForHashing(headers, uploadType);
         if (!validation.valid) {
           throw new Error(`Invalid CSV: Missing columns ${validation.missing.join(", ")}`);
         }
@@ -96,8 +96,8 @@ export default function DashboardPage() {
     store.setLoading("isAnchoring", true);
     try {
       const result = await anchorRoot(
-        store.merkleRoot, 
-        store.university, 
+        store.merkleRoot,
+        store.university,
         store.year,
         store.merkleLeaves
       );

@@ -60,19 +60,39 @@ function parseLine(line: string): string[] {
 /**
  * Validate that CSV contains required columns for hash generation
  */
-export function validateCSVForHashing(headers: string[]): {
+/**
+ * Validate that CSV contains required columns for hash generation
+ */
+export function validateCSVForHashing(headers: string[], type: string = "marksheet"): {
   valid: boolean;
   missing: string[];
 } {
   const normalizedHeaders = headers.map((h) => h.toLowerCase().replace(/\s+/g, "_"));
 
-  const requiredMappings = [
+  let requiredMappings: { key: string; aliases: string[] }[] = [];
+
+  if (type === "certificate") {
+    requiredMappings = [
+      { key: "name", aliases: ["name", "student_name", "full_name"] }
+    ];
+    // Check for either certificate_no OR registration_no
+    const idAliases = ["certificate_no", "cert_no", "no", "reg_no", "registration_no", "serial_no", "certificate_no"];
+    const hasID = idAliases.some(alias => normalizedHeaders.includes(alias.toLowerCase()));
+    
+    const missing: string[] = [];
+    if (!hasID) missing.push("certificate_no/registration_no");
+    
+    for (const req of requiredMappings) {
+      const found = req.aliases.some((alias) => normalizedHeaders.includes(alias));
+      if (!found) missing.push(req.key);
+    }
+    return { valid: missing.length === 0, missing };
+  } 
+
+  // For Transcripts and Marksheets
+  requiredMappings = [
     { key: "registration_no", aliases: ["registration_no", "registrationno", "reg_no"] },
-    { key: "gpa", aliases: ["gpa", "overall_gpa"] },
-    {
-      key: "total_credit_points",
-      aliases: ["total_credit_points", "totalcreditpoints", "total_credits"],
-    },
+    { key: "name", aliases: ["name", "student_name", "full_name"] },
   ];
 
   const missing: string[] = [];
@@ -86,3 +106,4 @@ export function validateCSVForHashing(headers: string[]): {
 
   return { valid: missing.length === 0, missing };
 }
+

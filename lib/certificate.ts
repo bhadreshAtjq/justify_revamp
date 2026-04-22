@@ -3,12 +3,12 @@ export function mapCertificatePayload(data: any): any {
   if (data.certificate_no && data.degree) {
     return {
       certificate_no: String(data.certificate_no || ""),
-      no: String(data.no || ""),
-      university: String(data.university || data.University || "Junagadh Agricultural University"),
-      name: String(data.name || data.Student_Name || data["Student Name"] || ""),
+      no: String(data.no || data.certificate_no || ""),
+      name: String(data.name || data.Student_Name || data["Student Name"] || data.Name || ""),
       degree: String(data.degree || data.Degree || ""),
-      ogpa: String(data.ogpa || data.Overall_GPA || data.OGPA || data.gpa || ""),
-      year: String(data.year || data.Year || data.academic_year || ""),
+      branch: String(data.branch || data.Branch || ""),
+      ogpa: String(data.ogpa || data.Overall_GPA || data.OGPA || data.gpa || data.CGPA || ""),
+      year: String(data.year || data.Year || data.academic_year || data.Session || ""),
       date: String(data.date || data.Date || ""),
       class_division: String(data.class_division || data.Class || data.class || "")
     };
@@ -24,14 +24,16 @@ export function mapCertificatePayload(data: any): any {
   };
 
   return {
-    certificate_no: findVal(["certificate_no", "certificate no", "cert_no"]),
-    no: findVal(["no", "number", "serial_no", "Reg No", "Registration_No"]),
-    university: findVal(["university", "University", "College", "college"]) || "Junagadh Agricultural University",
-    name: findVal(["Student_Name", "name", "Student Name", "Full_Name"]),
+    certificate_no: findVal(["certificate_no", "certificate no", "cert_no", "Certificate_No"]),
+    no: findVal(["no", "number", "serial_no", "Reg No", "Registration_No"]) || findVal(["certificate_no", "Certificate_No", "cert_no"]),
+    name: findVal(["Student_Name", "name", "Student Name", "Full_Name", "Name"]),
     degree: findVal(["Degree", "degree", "course"]),
-    ogpa: findVal(["Overall_GPA", "ogpa", "OGPA", "gpa", "GPA"]),
-    year: findVal(["year", "academic_year", "Completion_Year", "completion_year", "Admission_Year"]),
+    branch: findVal(["Branch", "branch", "Major", "major"]),
+    ogpa: findVal(["Overall_GPA", "ogpa", "OGPA", "gpa", "GPA", "CGPA"]),
+    year: findVal(["year", "academic_year", "Completion_Year", "completion_year", "Admission_Year", "Session"]),
     date: findVal(["date", "issue_date", "Date"]),
     class_division: findVal(["Class", "class_division", "division", "Result", "status"])
   };
 }
+
+

@@ -15,8 +15,10 @@ import {
 } from "react-icons/fa";
 import MarksheetTemplate from "./MarksheetTemplate";
 import TranscriptTemplate from "./TranscriptTemplate";
+import CertificateTemplate from "./CertificateTemplate";
 import { discoverSubjects, mapStudentMetadata } from "@/lib/marksheet";
 import { mapTranscriptPayload } from "@/lib/transcript";
+import { mapCertificatePayload } from "@/lib/certificate";
 import { generateStudentHash } from "@/lib/hash";
 import { useAppStore } from "@/store/useAppStore";
 import jsPDF from "jspdf";
@@ -48,38 +50,42 @@ export default function CSVPreviewTable({
     setIsGenerating(true);
     
     try {
-      const templateId = type === "transcript" ? "transcript-pdf" : "marksheet-pdf";
+      let templateId = "marksheet-pdf";
+      if (type === "transcript") templateId = "transcript-pdf";
+      if (type === "certificate") templateId = "certificate-pdf";
+
       const input = document.getElementById(templateId);
       if (!input) throw new Error("Template not found");
 
+      const isLandscape = type === "certificate";
+
       const canvas = await html2canvas(input, {
-        scale: 2,
+        scale: 3, 
         useCORS: true,
         logging: false,
         backgroundColor: "#ffffff",
-        windowHeight: input.scrollHeight,
+        windowWidth: 1400,
+        width: input.scrollWidth,
+        height: input.scrollHeight,
         scrollY: 0
       });
 
       const imgData = canvas.toDataURL("image/png");
       
-      // Calculate proportions for dynamic PDF dimensions rather than enforced A4
       const canvasWidth = canvas.width;
       const canvasHeight = canvas.height;
-      const pdfWidth = 595.28; // Standard A4 width reference in points
+      const pdfWidth = isLandscape ? 841.89 : 595.28; 
       const pdfHeight = (canvasHeight * pdfWidth) / canvasWidth;
 
       const pdf = new jsPDF({
-        orientation: "portrait",
+        orientation: isLandscape ? "landscape" : "portrait",
         unit: "pt",
         format: [pdfWidth, pdfHeight]
       });
 
       pdf.addImage(imgData, "PNG", 0, 0, pdfWidth, pdfHeight);
-      // Mathematically embed the absolute strict JSON directly into the PDF text layer.
-      // This allows hybrid OCR extractors in the Python backend to rip the exact payload
-      // without relying on error-prone visual-LLM hallucinations!
-      let exportJson = selectedStudent;
+      
+      let exportJson: any = selectedStudent;
       if (type === "transcript") {
         const { mapTranscriptPayload } = await import("@/lib/transcript");
         exportJson = mapTranscriptPayload(selectedStudent);
@@ -94,22 +100,25 @@ export default function CSVPreviewTable({
         };
       }
 
-      pdf.addPage();
-      pdf.setFontSize(4);
-      pdf.setTextColor(255, 255, 255); // Invisible to human eye
-      const textLines = pdf.splitTextToSize(JSON.stringify(exportJson), pdfWidth - 20);
-      pdf.text(textLines, 10, 10);
+      // Embed JSON metadata invisibly on the SAME page to keep it as a single page
+      pdf.setFontSize(2);
+      pdf.setTextColor(255, 255, 255); 
+      const jsonStr = JSON.stringify(exportJson);
+      // Place at the very bottom edge
+      pdf.text(jsonStr, 5, pdfHeight - 5, { maxWidth: pdfWidth - 10 });
 
       const name = (selectedStudent.name || selectedStudent.Student_Name || "document").replace(/\s+/g, '_');
       pdf.save(`${name}_${type}.pdf`);
 
     } catch (err) {
+
       console.error("PDF Export failed:", err);
       alert("Failed to generate PDF. Please try again.");
     } finally {
       setIsGenerating(false);
     }
   };
+
 
   // CSV Export Logic
   const handleExportCSV = () => {
@@ -231,11 +240,19 @@ export default function CSVPreviewTable({
 
       {selectedStudent && (
         <div style={{ position: 'fixed', inset: 0, zIndex: 9999, background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(10px)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <div className="glass-card" style={{ width: '900px', maxHeight: '95vh', padding: 0, overflow: 'hidden', display: 'flex', flexDirection: 'column', background: 'white' }}>
+          <div className="glass-card" style={{ 
+            width: type === "certificate" ? '1100px' : '900px', 
+            maxHeight: '95vh', 
+            padding: 0, 
+            overflow: 'hidden', 
+            display: 'flex', 
+            flexDirection: 'column', 
+            background: 'white' 
+          }}>
             <div style={{ padding: '16px 24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #eee' }}>
               <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
                 <FaFilePdf style={{ color: '#d32f2f', fontSize: 24 }} />
-                <h3 style={{ margin: 0, fontSize: 16 }}>Blockchain Verified {type === "transcript" ? "Transcript" : "Marksheet"}</h3>
+                <h3 style={{ margin: 0, fontSize: 16 }}>Blockchain Verified {type.charAt(0).toUpperCase() + type.slice(1)}</h3>
               </div>
               <div style={{ display: 'flex', gap: 8 }}>
                 <button 
@@ -254,6 +271,8 @@ export default function CSVPreviewTable({
             <div style={{ flex: 1, overflowY: 'auto', background: '#f5f5f5', padding: '20px' }}>
               {type === "transcript" ? (
                 <TranscriptTemplate data={selectedStudent} />
+              ) : type === "certificate" ? (
+                <CertificateTemplate data={selectedStudent} />
               ) : (
                 <MarksheetTemplate data={{
                   ...selectedStudent,
@@ -273,6 +292,7 @@ export default function CSVPreviewTable({
                 }} />
               )}
             </div>
+
           </div>
         </div>
       )}

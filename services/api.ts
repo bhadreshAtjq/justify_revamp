@@ -24,6 +24,7 @@ export interface OCRResponse {
   name: string;
   registration_no: string;
   gpa: string;
+  branch?: string;
   keccak256_hash?: string;
   subjects: OCRSubject[];
 }
@@ -48,6 +49,7 @@ export interface VerifyResponse {
     name?: string;
     registrationNo?: string;
     gpa?: string;
+    branch?: string;
     createdAt?: string;
     anchor?: any;
   };
@@ -82,9 +84,15 @@ export async function anchorRoot(
 export async function processOCR(file: File, type: string = "marksheet"): Promise<OCRResponse> {
   const formData = new FormData();
   formData.append("file", file);
-  formData.append("type", type);
+  
+  let endpoint = `${API_BASE}/api/v1/marksheet_data_extraction`;
+  if (type === "certificate") {
+    endpoint = `${API_BASE}/api/v1/certificate`;
+  } else if (type === "transcript") {
+    endpoint = `${API_BASE}/api/v1/transcript`;
+  }
 
-  const response = await fetch(`${API_BASE}/api/ocr`, {
+  const response = await fetch(endpoint, {
     method: "POST",
     body: formData,
   });
@@ -105,7 +113,7 @@ export async function validateQuality(file: File): Promise<QualityResponse> {
   const formData = new FormData();
   formData.append("file", file);
 
-  const response = await fetch(`${API_BASE}/api/validate`, {
+  const response = await fetch(`${API_BASE}/api/v1/validate`, {
     method: "POST",
     body: formData,
   });
@@ -117,6 +125,7 @@ export async function validateQuality(file: File): Promise<QualityResponse> {
 
   return await response.json();
 }
+
 
 /**
  * Verify a document hash against the blockchain
