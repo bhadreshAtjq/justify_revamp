@@ -59,26 +59,51 @@ export default function CSVPreviewTable({
 
       const isLandscape = type === "certificate";
 
-      const canvas = await html2canvas(input, {
-        scale: 3, 
+      // 1. Create a clone and isolate it on the body to avoid parent clipping/scroll issues
+      const clone = input.cloneNode(true) as HTMLElement;
+      clone.style.position = "absolute";
+      clone.style.left = "-9999px";
+      clone.style.top = "0";
+      clone.style.width = isLandscape ? "1100px" : "900px"; // Fixed width for capture stability
+      clone.style.height = "auto";
+      clone.style.background = "white";
+      document.body.appendChild(clone);
+
+      // Force unroll styles on the clone
+      clone.style.maxHeight = "none";
+      clone.style.overflow = "visible";
+      const innerPage = (clone.querySelector('.certificate-page') || 
+                         clone.querySelector('.marksheet-page') || 
+                         clone.querySelector('.transcript-page')) as HTMLElement;
+      if (innerPage) {
+        innerPage.style.boxShadow = "none";
+        innerPage.style.margin = "0 auto 60px auto";
+        innerPage.style.display = "block";
+      }
+
+      const canvas = await html2canvas(clone, {
+        scale: 4, 
         useCORS: true,
         logging: false,
         backgroundColor: "#ffffff",
-        windowWidth: 1400,
-        width: input.scrollWidth,
-        height: input.scrollHeight,
-        scrollY: 0
+        windowWidth: isLandscape ? 1200 : 1000,
+        windowHeight: 4000,
       });
 
+      // 2. Clean up clone
+      document.body.removeChild(clone);
+
       const imgData = canvas.toDataURL("image/png");
-      
       const canvasWidth = canvas.width;
       const canvasHeight = canvas.height;
+
+      // Base A4 width in points
       const pdfWidth = isLandscape ? 841.89 : 595.28; 
       const pdfHeight = (canvasHeight * pdfWidth) / canvasWidth;
 
+      // Use 'p' with custom format [w, h] to avoid orientation flipping confusion
       const pdf = new jsPDF({
-        orientation: isLandscape ? "landscape" : "portrait",
+        orientation: "p",
         unit: "pt",
         format: [pdfWidth, pdfHeight]
       });

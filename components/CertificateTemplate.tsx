@@ -15,11 +15,11 @@ export default function CertificateTemplate({ data, id = "certificate-pdf" }: { 
   const leafHash = data.merkle_leaf || data.keccak256_hash || "PENDING_ANCHOR";
 
   return (
-    <div className="certificate-preview-container" style={{ background: '#e0e0e0', padding: '50px 0', width: '100%', overflowX: 'auto', display: 'flex', justifyContent: 'center' }}>
+    <div className="certificate-preview-container" id={id} style={{ background: '#e0e0e0', padding: '50px 0', width: '100%', overflowX: 'auto', display: 'flex', justifyContent: 'center' }}>
       <style dangerouslySetInnerHTML={{
         __html: `
         .certificate-capture-wrapper {
-          padding: 0;
+          padding: 0 0 40px 0;
           margin: 0;
           background: #fff;
         }
@@ -133,7 +133,7 @@ export default function CertificateTemplate({ data, id = "certificate-pdf" }: { 
         }
       `}} />
 
-      <div id={id} className="certificate-capture-wrapper">
+      <div className="certificate-capture-wrapper">
         <div className="certificate-page">
           <div className="cert-header">
             <img src="/assets/uni_logo.jpg" alt="Logo" className="cert-logo" onError={(e) => e.currentTarget.style.display='none'} />
