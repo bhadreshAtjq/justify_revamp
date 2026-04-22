@@ -3,18 +3,14 @@
 import React, { useMemo } from "react";
 import { discoverSubjects, mapStudentMetadata } from "@/lib/marksheet";
 import { QRCodeSVG } from "qrcode.react";
-
 export default function MarksheetTemplate({ data, id = "marksheet-pdf" }: { data: any, id?: string }) {
   const subjects = useMemo(() => discoverSubjects(data), [data]);
   const metadata = mapStudentMetadata(data);
   const { regNo, name, gpa, faculty, academicYear, degree, semester, major, minor, college, examination } = metadata;
-
   const verificationUrl = typeof window !== 'undefined' 
     ? `${window.location.origin}/verify/${data.merkle_leaf || data.keccak256_hash}`
     : `https://verification.justifai.com/verify/${data.merkle_leaf || data.keccak256_hash}`;
-
   const leafHash = data.merkle_leaf || data.keccak256_hash || "PENDING_ANCHOR";
-
   return (
     <div className="marksheet-preview-container" id={id} style={{ background: '#f0f0f0', padding: '40px 0', width: '100%', overflowX: 'auto' }}>
       <style dangerouslySetInnerHTML={{
