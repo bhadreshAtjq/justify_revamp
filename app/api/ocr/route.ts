@@ -39,31 +39,11 @@ export async function POST(req: Request) {
 
       // Fallback: Return empty structure with error flag so UI can handle it gracefully
       if (type === "certificate") {
-        return NextResponse.json({
-          error: "OCR Service Unavailable",
-          certificate_no: "",
-          no: "",
-          name: "",
-          degree: "",
-          branch: "",
-          ogpa: "",
-          year: "",
-          date: "",
-          class_division: ""
-        });
+        console.log("Certificate OCR failed, returning empty structure");
+        return NextResponse.json({ error: "OCR Service Unavailable" });
       } else if (type === "transcript") {
-        return NextResponse.json({
-          error: "OCR Service Unavailable",
-          registration_no: "",
-          name: "",
-          degree: "",
-          admission_year: "",
-          completion_year: "",
-          ogpa: "",
-          result: "",
-          class_division: "",
-          years: []
-        });
+        console.log("Transcript OCR failed, returning empty structure");
+        return NextResponse.json({ error: "OCR Service Unavailable" });
       } else {
         return NextResponse.json({
           error: "OCR Service Unavailable",
