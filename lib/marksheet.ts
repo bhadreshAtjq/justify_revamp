@@ -69,7 +69,7 @@ export function mapStudentMetadata(data: any) {
     faculty: findVal(["Faculty", "faculty"]) || "POST-GRADUATE STUDIES",
     academicYear: findVal(["Academic Year", "Academic_Year"]) || "2017-2018",
     degree: findVal(["Degree Course", "degree", "Degree_Course"]) || "M.B.A. (AB)",
-    branch: findVal(["Major Subject", "branch", "Branch", "major", "Major_Subject"]) || "N/A",
+
     semester: findVal(["Semester", "semester"]) || "THIRD",
     major: findVal(["Major Subject", "major", "Major_Subject"]) || "AGRI BUSINESS MANAGEMENT",
     minor: findVal(["Minor Subject", "minor", "Minor_Subject"]) || "AGRI BUSINESS MANAGEMENT",
