@@ -107,30 +107,30 @@ export default function CSVPreviewTable({
           document.body.appendChild(clone);
 
           // Get actual height after rendering
-          const actualHeight = clone.offsetHeight;
+          const actualHeight = page.offsetHeight;
 
-          const canvas = await html2canvas(clone, {
-            scale: 2.5,
+          const canvas = await html2canvas(page, {
+            scale: 2, // 2 is usually enough for high quality without crashing browser memory
             useCORS: true,
             logging: false,
             backgroundColor: "#ffffff",
-            windowWidth: 1000,
-            windowHeight: Math.max(actualHeight + 100, 1200), // Use actual height with padding
           });
 
-          document.body.removeChild(clone);
+          const imgData = canvas.toDataURL("image/jpeg", 1.0);
+          
+          // Calculate the height in PDF points based on the canvas aspect ratio
+          // pdfWidth is already calculated correctly
+          const canvasAspectRatio = canvas.height / canvas.width;
+          const imgHeight = pdfWidth * canvasAspectRatio;
 
-          const imgData = canvas.toDataURL("image/jpeg", 0.92);
-          const canvasHeight = (canvas.width * 1120) / 840; // A4 aspect ratio
-
-          pdf.addImage(imgData, "JPEG", 0, 0, pdfWidth, canvasHeight);
+          pdf.addImage(imgData, "JPEG", 0, 0, pdfWidth, imgHeight, undefined, 'FAST');
 
           // Embed JSON on last page
           if (i === pages.length - 1) {
             pdf.setFontSize(2);
             pdf.setTextColor(255, 255, 255);
             const jsonStr = JSON.stringify(exportJson);
-            pdf.text(jsonStr, 5, canvasHeight - 5, { maxWidth: pdfWidth - 10 });
+            pdf.text(jsonStr, 5, imgHeight - 5, { maxWidth: pdfWidth - 10 });
           }
         }
       } else {

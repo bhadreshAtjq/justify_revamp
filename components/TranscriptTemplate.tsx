@@ -8,9 +8,58 @@ export default function TranscriptTemplate({ data, id = "transcript-pdf" }: { da
   // Use the transcript mapper to get the structured data
   const transcript = useMemo(() => mapTranscriptPayload(data), [data]);
 
-  // Split years into 2 pages - first 2 years on page 1, remaining on page 2
-  const page1Years = transcript.years.slice(0, 2);
-  const page2Years = transcript.years.slice(2);
+  // --- DYNAMIC PAGE SPLITTING LOGIC (3 PAGES MAX) ---
+  const pages = useMemo(() => {
+    const result: any[][] = [];
+    let currentPage: any[] = [];
+    let currentRows = 0;
+    
+    // Base Page constraints (Standard A4 capacity)
+    const MAX_ROWS_FIRST_PAGE = 22; 
+    const MAX_ROWS_SUBSEQUENT = 32;
+
+    // Calculate total estimated rows for the entire transcript
+    let totalRows = 0;
+    transcript.years.forEach((year: any) => {
+      totalRows += 1; // Year Name
+      (year.semesters || []).forEach((sem: any) => {
+        totalRows += 2 + (sem.courses || []).length; // Sem Name + Footer + Course Rows
+      });
+    });
+
+    // Determine the max allowed rows over 3 pages
+    const TOTAL_CAPACITY = MAX_ROWS_FIRST_PAGE + (2 * MAX_ROWS_SUBSEQUENT);
+
+    // If we exceed capacity, calculate how much we need to "squeeze" rows per page
+    // to force everything into 3 pages.
+    const squeezeRatio = totalRows > TOTAL_CAPACITY ? totalRows / TOTAL_CAPACITY : 1;
+    
+    const p1Limit = Math.ceil(MAX_ROWS_FIRST_PAGE * squeezeRatio);
+    const pSubLimit = Math.ceil(MAX_ROWS_SUBSEQUENT * squeezeRatio);
+
+    transcript.years.forEach((year: any) => {
+      let yearRows = 1; 
+      (year.semesters || []).forEach((sem: any) => {
+        yearRows += 2 + (sem.courses || []).length;
+      });
+
+      const limit = (result.length === 0) ? p1Limit : pSubLimit;
+
+      // Logic: If adding this year exceeds the dynamic limit, start a new page
+      // EXCEPT: if we are already on Page 2, Page 3 MUST take everything else.
+      if (result.length < 2 && currentRows + yearRows > limit && currentPage.length > 0) {
+        result.push(currentPage);
+        currentPage = [year];
+        currentRows = yearRows;
+      } else {
+        currentPage.push(year);
+        currentRows += yearRows;
+      }
+    });
+
+    if (currentPage.length > 0) result.push(currentPage);
+    return result;
+  }, [transcript]);
 
   const verificationUrl = typeof window !== 'undefined'
     ? `${window.location.origin}/verify/${data.merkle_leaf || data.keccak256_hash}`
@@ -19,7 +68,7 @@ export default function TranscriptTemplate({ data, id = "transcript-pdf" }: { da
   const leafHash = data.merkle_leaf || data.keccak256_hash || "PENDING_ANCHOR";
 
   const renderPage = (years: any[], pageNum: number, isLastPage: boolean) => (
-    <div className="transcript-page" style={{ pageBreakAfter: isLastPage ? 'auto' : 'always' }}>
+    <div className="transcript-page" key={pageNum} style={{ pageBreakAfter: isLastPage ? 'auto' : 'always' }}>
       {pageNum === 1 && (
         <>
           <div className="transcript-header">
@@ -58,18 +107,18 @@ export default function TranscriptTemplate({ data, id = "transcript-pdf" }: { da
         </>
       )}
 
-      {pageNum === 2 && (
-        <div style={{ fontSize: '12px', marginBottom: '15px', color: '#666' }}>
-          <strong>Student:</strong> {transcript.name} | <strong>Reg No:</strong> {transcript.registration_no}
+      {pageNum > 1 && (
+        <div style={{ fontSize: '11px', marginBottom: '10px', color: '#666', borderBottom: '1px solid #ddd', paddingBottom: '3px' }}>
+          <strong>Student:</strong> {transcript.name} | <strong>Reg No:</strong> {transcript.registration_no} | <span style={{ float: 'right' }}>Page {pageNum} of {pages.length}</span>
         </div>
       )}
 
       <table className="transcript-main-table">
         <thead>
           <tr>
-            <th style={{ width: '120px' }}>Course Number</th>
+            <th style={{ width: '110px' }}>Course Number</th>
             <th>Title of the course</th>
-            <th style={{ width: '100px' }}>Credit Points</th>
+            <th style={{ width: '90px' }}>Credit Points</th>
           </tr>
         </thead>
         <tbody>
@@ -90,8 +139,8 @@ export default function TranscriptTemplate({ data, id = "transcript-pdf" }: { da
                   ))}
                   <tr className="sem-footer-row">
                     <td></td>
-                    <td colSpan={2} style={{ borderTop: '2px solid #000', padding: '6px' }}>
-                      <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '30px' }}>
+                    <td colSpan={2} style={{ borderTop: '2.5px solid #000', padding: '5px' }}>
+                      <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '25px' }}>
                         <span>G.P.A. : {semObj.gpa}</span>
                         <span>C.G.P.A. : {semObj.cgpa}</span>
                       </div>
@@ -106,12 +155,12 @@ export default function TranscriptTemplate({ data, id = "transcript-pdf" }: { da
 
       {isLastPage && (
         <>
-          <div style={{ marginTop: '20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <div style={{ fontSize: '13px' }}>
+          <div style={{ marginTop: '12px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1.5px solid #000', paddingTop: '8px' }}>
+            <div style={{ fontSize: '12px' }}>
               <div><strong>Result:</strong> {transcript.result || "Pass"}</div>
-              <div style={{ marginTop: '4px' }}><strong>Class / Division:</strong> {transcript.class_division || "First Class"}</div>
+              <div style={{ marginTop: '2px' }}><strong>Class / Division:</strong> {transcript.class_division || "First Class"}</div>
             </div>
-            <div style={{ fontWeight: 'bold', fontSize: '14px', textAlign: 'right' }}>
+            <div style={{ fontWeight: 'bold', fontSize: '13px', textAlign: 'right' }}>
               OVERALL G.P.A. : {transcript.ogpa}
             </div>
           </div>
@@ -119,22 +168,22 @@ export default function TranscriptTemplate({ data, id = "transcript-pdf" }: { da
           {/* Verification Footer */}
           <div className="verification-footer">
             <div className="qr-section">
-              <QRCodeSVG value={verificationUrl} size={65} />
+              <QRCodeSVG value={verificationUrl} size={55} />
             </div>
             <div className="v-text">
-              <div style={{ fontWeight: 'bold', fontSize: '12px', color: '#1a4d2e', marginBottom: '2px' }}>
+              <div style={{ fontWeight: 'bold', fontSize: '10px', color: '#1a4d2e', marginBottom: '1px' }}>
                 OFFICIAL BLOCKCHAIN VERIFIED TRANSCRIPT
               </div>
-              <div>
-                This transcript is a digital twin anchored on the blockchain. Any tampering with the course records or grades will invalidate the Merkle Leaf proof. Verify authenticity at the URL above.
+              <div style={{ lineHeight: '1.1' }}>
+                Anchored on the blockchain for immutable verification. Tampering invalidates the Merkle proof. Verify at the URL above.
               </div>
               <div className="v-hash">
                 <strong>Proof ID:</strong> {leafHash}
               </div>
             </div>
             <div style={{ textAlign: 'right' }}>
-              <div style={{ fontSize: '10px', fontWeight: 'bold', opacity: 0.7 }}>Date Generated</div>
-              <div style={{ fontSize: '12px' }}>{new Date().toLocaleDateString('en-GB')}</div>
+              <div style={{ fontSize: '8px', fontWeight: 'bold', opacity: 0.6 }}>Date Generated</div>
+              <div style={{ fontSize: '10px' }}>{new Date().toLocaleDateString('en-GB')}</div>
             </div>
           </div>
         </>
@@ -149,7 +198,7 @@ export default function TranscriptTemplate({ data, id = "transcript-pdf" }: { da
         .transcript-page {
           width: 840px;
           margin: 0 auto 30px auto;
-          padding: 30px 40px;
+          padding: 30px 45px;
           position: relative;
           background: #fff;
           min-height: 1120px;
@@ -157,6 +206,23 @@ export default function TranscriptTemplate({ data, id = "transcript-pdf" }: { da
           font-family: "Times New Roman", Times, serif;
           box-shadow: 0 0 20px rgba(0,0,0,0.1);
           overflow: visible;
+          box-sizing: border-box;
+          -webkit-print-color-adjust: exact;
+          print-color-adjust: exact;
+        }
+        @media print {
+          body { margin: 0 !important; padding: 0 !important; }
+          .transcript-preview-container { padding: 0 !important; background: none !important; width: auto !important; }
+          .transcript-page { 
+            margin: 0 !important; 
+            box-shadow: none !important; 
+            width: 100% !important; 
+            height: 1120px !important;
+            padding: 40px 50px !important;
+          }
+          .transcript-main-table th { background-color: #f0f0f0 !important; }
+          .sem-header-row { background-color: #fdfdfd !important; }
+          tr { page-break-inside: avoid !important; }
         }
         .transcript-header {
           display: flex;
@@ -169,26 +235,26 @@ export default function TranscriptTemplate({ data, id = "transcript-pdf" }: { da
           position: absolute;
           left: 0;
           top: 0;
-          width: 80px;
+          width: 75px;
         }
         .transcript-titles {
           text-align: center;
           flex: 1;
         }
         .transcript-titles h1 {
-          font-size: 22px;
+          font-size: 21px;
           margin: 0;
           color: #1a4d2e;
           text-transform: uppercase;
         }
         .transcript-titles h2 {
-          font-size: 18px;
+          font-size: 17px;
           margin: 2px 0;
           text-transform: uppercase;
         }
         .transcript-titles h3 {
-          font-size: 16px;
-          margin: 10px 0;
+          font-size: 15px;
+          margin: 8px 0;
           text-decoration: underline;
           font-weight: bold;
         }
@@ -196,8 +262,8 @@ export default function TranscriptTemplate({ data, id = "transcript-pdf" }: { da
           position: absolute;
           right: 0;
           top: 0;
-          width: 90px;
-          height: 110px;
+          width: 85px;
+          height: 105px;
           border: 1px solid #000;
           display: flex;
           align-items: center;
@@ -208,18 +274,18 @@ export default function TranscriptTemplate({ data, id = "transcript-pdf" }: { da
         .transcript-info-grid {
           width: 100%;
           border-collapse: collapse;
-          margin-bottom: 15px;
-          font-size: 13px;
+          margin-bottom: 12px;
+          font-size: 12px;
         }
         .transcript-info-grid td {
           padding: 2px 4px;
         }
         .transcript-info-grid .label {
-          width: 140px;
+          width: 135px;
           white-space: nowrap;
         }
         .transcript-info-grid .sep {
-          width: 10px;
+          width: 8px;
         }
         .transcript-info-grid .val {
           font-weight: bold;
@@ -228,16 +294,18 @@ export default function TranscriptTemplate({ data, id = "transcript-pdf" }: { da
         .transcript-main-table {
           width: 100%;
           border-collapse: collapse;
-          border: 1px solid #000;
+          border: 1.5px solid #000;
         }
         .transcript-main-table th, .transcript-main-table td {
           border: 1px solid #000;
-          padding: 4px 6px;
-          font-size: 12px;
+          padding: 3px 6px;
+          font-size: 11.5px;
+          line-height: 1.25;
         }
         .transcript-main-table th {
           background: #f0f0f0;
           text-align: center;
+          font-weight: bold;
         }
         .sem-header-row {
           background: #fdfdfd;
@@ -252,38 +320,39 @@ export default function TranscriptTemplate({ data, id = "transcript-pdf" }: { da
         }
 
         .verification-footer {
-          margin-top: 30px;
+          margin-top: 15px;
           border-top: 1px solid #000;
-          padding-top: 15px;
+          padding-top: 8px;
           display: flex;
           align-items: center;
-          gap: 20px;
+          gap: 12px;
         }
         .qr-section {
           background: #fff;
-          padding: 5px;
+          padding: 4px;
           border: 1px solid #ddd;
           flex-shrink: 0;
         }
         .v-text {
-          font-size: 11px;
+          font-size: 9.5px;
           color: #333;
           flex: 1;
         }
         .v-hash {
           font-family: monospace;
           background: #f4f4f4;
-          padding: 3px 6px;
+          padding: 2px 5px;
           border-radius: 4px;
           display: block;
-          margin-top: 3px;
-          font-size: 10px;
+          margin-top: 2px;
+          font-size: 8.5px;
           word-break: break-all;
         }
       `}} />
 
-      {renderPage(page1Years, 1, page2Years.length === 0)}
-      {page2Years.length > 0 && renderPage(page2Years, 2, true)}
+      {pages.map((yearGroup, index) => (
+        renderPage(yearGroup, index + 1, index === pages.length - 1)
+      ))}
     </div>
   );
 }
