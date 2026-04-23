@@ -82,7 +82,7 @@ export default function CSVPreviewTable({
       }
 
       const canvas = await html2canvas(clone, {
-        scale: 4, 
+        scale: 2.5,
         useCORS: true,
         logging: false,
         backgroundColor: "#ffffff",
@@ -93,7 +93,7 @@ export default function CSVPreviewTable({
       // 2. Clean up clone
       document.body.removeChild(clone);
 
-      const imgData = canvas.toDataURL("image/png");
+      const imgData = canvas.toDataURL("image/jpeg", 0.92);
       const canvasWidth = canvas.width;
       const canvasHeight = canvas.height;
 
@@ -105,11 +105,12 @@ export default function CSVPreviewTable({
       const pdf = new jsPDF({
         orientation: "p",
         unit: "pt",
-        format: [pdfWidth, pdfHeight]
+        format: [pdfWidth, pdfHeight],
+        compress: true
       });
 
-      pdf.addImage(imgData, "PNG", 0, 0, pdfWidth, pdfHeight);
-      
+      pdf.addImage(imgData, "JPEG", 0, 0, pdfWidth, pdfHeight);
+
       let exportJson: any = selectedStudent;
       if (type === "transcript") {
         const { mapTranscriptPayload } = await import("@/lib/transcript");
@@ -127,7 +128,7 @@ export default function CSVPreviewTable({
 
       // Embed JSON metadata invisibly on the SAME page to keep it as a single page
       pdf.setFontSize(2);
-      pdf.setTextColor(255, 255, 255); 
+      pdf.setTextColor(255, 255, 255);
       const jsonStr = JSON.stringify(exportJson);
       // Place at the very bottom edge
       pdf.text(jsonStr, 5, pdfHeight - 5, { maxWidth: pdfWidth - 10 });

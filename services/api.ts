@@ -64,7 +64,7 @@ export async function anchorRoot(
   year: string,
   leaves: string[]
 ): Promise<AnchorResponse> {
-  const response = await fetch(`${API_BASE}/api/anchor-root`, {
+  const response = await fetch(`/api/anchor-root`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ merkleRoot, university, year, leaves }),
@@ -84,15 +84,9 @@ export async function anchorRoot(
 export async function processOCR(file: File, type: string = "marksheet"): Promise<OCRResponse> {
   const formData = new FormData();
   formData.append("file", file);
-  
-  let endpoint = `${API_BASE}/api/v1/marksheet_data_extraction`;
-  if (type === "certificate") {
-    endpoint = `${API_BASE}/api/v1/certificate`;
-  } else if (type === "transcript") {
-    endpoint = `${API_BASE}/api/v1/transcript`;
-  }
+  formData.append("type", type);
 
-  const response = await fetch(endpoint, {
+  const response = await fetch(`/api/ocr`, {
     method: "POST",
     body: formData,
   });
@@ -113,7 +107,7 @@ export async function validateQuality(file: File): Promise<QualityResponse> {
   const formData = new FormData();
   formData.append("file", file);
 
-  const response = await fetch(`${API_BASE}/api/v1/validate`, {
+  const response = await fetch(`/api/validate`, {
     method: "POST",
     body: formData,
   });
@@ -131,7 +125,7 @@ export async function validateQuality(file: File): Promise<QualityResponse> {
  * Verify a document hash against the blockchain
  */
 export async function verifyDocument(docHash: string): Promise<VerifyResponse> {
-  const response = await fetch(`${API_BASE}/api/verify`, {
+  const response = await fetch(`/api/verify`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ docHash }),
@@ -149,7 +143,7 @@ export async function verifyDocument(docHash: string): Promise<VerifyResponse> {
  * Sync student records to DB
  */
 export async function syncRecordsToDB(students: any[], type: string = "marksheet"): Promise<{ count: number }> {
-  const response = await fetch(`${API_BASE}/api/records`, {
+  const response = await fetch(`/api/records`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ students, type }),
@@ -166,7 +160,7 @@ export async function syncRecordsToDB(students: any[], type: string = "marksheet
  * Log anchor to DB
  */
 export async function logAnchorToDB(anchorData: any): Promise<any> {
-  const response = await fetch(`${API_BASE}/api/anchor`, {
+  const response = await fetch(`/api/anchor`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(anchorData),
@@ -179,7 +173,7 @@ export async function logAnchorToDB(anchorData: any): Promise<any> {
  * Fetch records from DB
  */
 export async function fetchRecordsFromDB(): Promise<any[]> {
-  const response = await fetch(`${API_BASE}/api/records`);
+  const response = await fetch(`/api/records`);
   if (!response.ok) throw new Error("Fetch failed");
   return await response.json();
 }

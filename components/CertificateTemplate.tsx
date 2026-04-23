@@ -185,7 +185,7 @@ export default function CertificateTemplate({ data, id = "certificate-pdf" }: { 
             </div>
             <div style={{ textAlign: 'right', minWidth: 100 }}>
                <div style={{ fontSize: 10, fontWeight: 'bold' }}>Certificate No.</div>
-               <div style={{ fontSize: 14, fontWeight: 'bold', color: '#d32f2f' }}>{cert.certificate_no || cert.no}</div>
+               <div style={{ fontSize: 14, fontWeight: 'bold', color: '#d32f2f' }}>{cert.no || cert.certificate_no}</div>
             </div>
           </div>
         </div>

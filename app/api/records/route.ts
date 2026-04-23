@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { mapStudentMetadata } from "@/lib/marksheet";
+import { mapCertificatePayload } from "@/lib/certificate";
 import { generateStudentHash } from "@/lib/hash";
 
 /**
@@ -39,18 +40,24 @@ export async function POST(req: Request) {
     // Process in batches for performance
     const recordsToCreate = students.map((s: any) => {
       const meta = mapStudentMetadata(s);
-      
+
+      // Clean certificate data before storing to avoid "null" strings in no field
+      let dataToStore = s;
+      if (type === "certificate") {
+        dataToStore = mapCertificatePayload(s);
+      }
+
       // Use the standard strategy to generate the Merkle Leaf
       const ingestionHash = s.hash || s.keccak256_hash || generateStudentHash(s, defaultStrategy, type);
 
       // Add leaf to JSON data for self-contained auditability
-      s.merkle_leaf = ingestionHash;
+      dataToStore.merkle_leaf = ingestionHash;
 
       return {
         registrationNo: meta.regNo,
         name: meta.name,
         gpa: meta.gpa,
-        data: s,
+        data: dataToStore,
         keccak256Hash: ingestionHash,
         merkleLeaf: ingestionHash // Store as top-level column for indexing
       };
