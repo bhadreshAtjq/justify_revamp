@@ -48,7 +48,7 @@ export default function CSVPreviewTable({
   const handleDownloadPDF = async () => {
     if (!selectedStudent) return;
     setIsGenerating(true);
-    
+
     try {
       let templateId = "marksheet-pdf";
       if (type === "transcript") templateId = "transcript-pdf";
@@ -58,58 +58,11 @@ export default function CSVPreviewTable({
       if (!input) throw new Error("Template not found");
 
       const isLandscape = type === "certificate";
+      const isMultiPage = type === "transcript";
 
-      // 1. Create a clone and isolate it on the body to avoid parent clipping/scroll issues
-      const clone = input.cloneNode(true) as HTMLElement;
-      clone.style.position = "absolute";
-      clone.style.left = "-9999px";
-      clone.style.top = "0";
-      clone.style.width = isLandscape ? "1100px" : "900px"; // Fixed width for capture stability
-      clone.style.height = "auto";
-      clone.style.background = "white";
-      document.body.appendChild(clone);
-
-      // Force unroll styles on the clone
-      clone.style.maxHeight = "none";
-      clone.style.overflow = "visible";
-      const innerPage = (clone.querySelector('.certificate-page') || 
-                         clone.querySelector('.marksheet-page') || 
-                         clone.querySelector('.transcript-page')) as HTMLElement;
-      if (innerPage) {
-        innerPage.style.boxShadow = "none";
-        innerPage.style.margin = "0 auto 60px auto";
-        innerPage.style.display = "block";
-      }
-
-      const canvas = await html2canvas(clone, {
-        scale: 2.5,
-        useCORS: true,
-        logging: false,
-        backgroundColor: "#ffffff",
-        windowWidth: isLandscape ? 1200 : 1000,
-        windowHeight: 4000,
-      });
-
-      // 2. Clean up clone
-      document.body.removeChild(clone);
-
-      const imgData = canvas.toDataURL("image/jpeg", 0.92);
-      const canvasWidth = canvas.width;
-      const canvasHeight = canvas.height;
-
-      // Base A4 width in points
-      const pdfWidth = isLandscape ? 841.89 : 595.28; 
-      const pdfHeight = (canvasHeight * pdfWidth) / canvasWidth;
-
-      // Use 'p' with custom format [w, h] to avoid orientation flipping confusion
-      const pdf = new jsPDF({
-        orientation: "p",
-        unit: "pt",
-        format: [pdfWidth, pdfHeight],
-        compress: true
-      });
-
-      pdf.addImage(imgData, "JPEG", 0, 0, pdfWidth, pdfHeight);
+      // Get all transcript pages
+      const pages = input.querySelectorAll('.transcript-page');
+      const singlePage = input.querySelector('.certificate-page') || input.querySelector('.marksheet-page');
 
       let exportJson: any = selectedStudent;
       if (type === "transcript") {
@@ -126,18 +79,111 @@ export default function CSVPreviewTable({
         };
       }
 
-      // Embed JSON metadata invisibly on the SAME page to keep it as a single page
-      pdf.setFontSize(2);
-      pdf.setTextColor(255, 255, 255);
-      const jsonStr = JSON.stringify(exportJson);
-      // Place at the very bottom edge
-      pdf.text(jsonStr, 5, pdfHeight - 5, { maxWidth: pdfWidth - 10 });
+      // Base A4 width in points
+      const pdfWidth = isLandscape ? 841.89 : 595.28;
+      const pdf = new jsPDF({
+        orientation: isLandscape ? "l" : "p",
+        unit: "pt",
+        format: isLandscape ? [pdfWidth, 595.28] : "a4",
+        compress: true
+      });
+
+      if (isMultiPage && pages.length > 0) {
+        // Handle multi-page transcript
+        for (let i = 0; i < pages.length; i++) {
+          if (i > 0) pdf.addPage();
+
+          const page = pages[i] as HTMLElement;
+          const clone = page.cloneNode(true) as HTMLElement;
+          clone.style.position = "absolute";
+          clone.style.left = "-9999px";
+          clone.style.top = "0";
+          clone.style.width = "840px";
+          clone.style.height = "auto";
+          clone.style.background = "white";
+          clone.style.boxShadow = "none";
+          clone.style.margin = "0";
+          clone.style.overflow = "visible";
+          document.body.appendChild(clone);
+
+          // Get actual height after rendering
+          const actualHeight = clone.offsetHeight;
+
+          const canvas = await html2canvas(clone, {
+            scale: 2.5,
+            useCORS: true,
+            logging: false,
+            backgroundColor: "#ffffff",
+            windowWidth: 1000,
+            windowHeight: Math.max(actualHeight + 100, 1200), // Use actual height with padding
+          });
+
+          document.body.removeChild(clone);
+
+          const imgData = canvas.toDataURL("image/jpeg", 0.92);
+          const canvasHeight = (canvas.width * 1120) / 840; // A4 aspect ratio
+
+          pdf.addImage(imgData, "JPEG", 0, 0, pdfWidth, canvasHeight);
+
+          // Embed JSON on last page
+          if (i === pages.length - 1) {
+            pdf.setFontSize(2);
+            pdf.setTextColor(255, 255, 255);
+            const jsonStr = JSON.stringify(exportJson);
+            pdf.text(jsonStr, 5, canvasHeight - 5, { maxWidth: pdfWidth - 10 });
+          }
+        }
+      } else {
+        // Handle single page (certificate or marksheet)
+        const targetPage = singlePage || input;
+        const clone = targetPage.cloneNode(true) as HTMLElement;
+        clone.style.position = "absolute";
+        clone.style.left = "-9999px";
+        clone.style.top = "0";
+        clone.style.width = isLandscape ? "1100px" : "900px";
+        clone.style.height = "auto";
+        clone.style.background = "white";
+        clone.style.overflow = "visible";
+        document.body.appendChild(clone);
+
+        const innerPage = (clone.querySelector('.certificate-page') ||
+                           clone.querySelector('.marksheet-page') ||
+                           clone.querySelector('.transcript-page')) as HTMLElement;
+        if (innerPage) {
+          innerPage.style.boxShadow = "none";
+          innerPage.style.margin = "0";
+          innerPage.style.display = "block";
+        }
+
+        // Get actual height after rendering
+        const actualHeight = clone.offsetHeight;
+
+        const canvas = await html2canvas(clone, {
+          scale: 2.5,
+          useCORS: true,
+          logging: false,
+          backgroundColor: "#ffffff",
+          windowWidth: isLandscape ? 1200 : 1000,
+          windowHeight: Math.max(actualHeight + 100, 4000),
+        });
+
+        document.body.removeChild(clone);
+
+        const imgData = canvas.toDataURL("image/jpeg", 0.92);
+        const canvasHeight = (canvas.width * (isLandscape ? 595.28 : 841.89)) / canvas.width;
+
+        pdf.addImage(imgData, "JPEG", 0, 0, pdfWidth, canvasHeight);
+
+        pdf.setFontSize(2);
+        pdf.setTextColor(255, 255, 255);
+        const jsonStr = JSON.stringify(exportJson);
+        pdf.text(jsonStr, 5, canvasHeight - 5, { maxWidth: pdfWidth - 10 });
+      }
 
       const name = (selectedStudent.name || selectedStudent.Student_Name || "document").replace(/\s+/g, '_');
       pdf.save(`${name}_${type}.pdf`);
 
     } catch (err) {
-
       console.error("PDF Export failed:", err);
       alert("Failed to generate PDF. Please try again.");
     } finally {
