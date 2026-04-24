@@ -114,6 +114,31 @@ export default function VerifyPage() {
         </button>
       </div>
 
+      {store.error && (
+        <div className="animate-slide-up" style={{
+          marginBottom: '24px',
+          padding: '16px 20px',
+          borderRadius: 12,
+          background: 'rgba(220, 38, 38, 0.1)',
+          border: '1px solid rgba(220, 38, 38, 0.3)',
+          display: 'flex',
+          alignItems: 'center',
+          gap: 12,
+          justifyContent: 'space-between'
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+            <div style={{ width: 20, height: 20, borderRadius: '50%', background: '#dc2626', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontSize: 12, fontWeight: 'bold' }}>!</div>
+            <span style={{ color: '#dc2626', fontWeight: 600, fontSize: 14 }}>{store.error}</span>
+          </div>
+          <button
+            onClick={() => store.setError(null)}
+            style={{ background: 'none', border: 'none', color: '#dc2626', cursor: 'pointer', fontSize: 18, fontWeight: 'bold', padding: '4px 8px' }}
+          >
+            ×
+          </button>
+        </div>
+      )}
+
       <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: 40, alignItems: 'start' }}>
         <div className="space-y-6">
           <section>

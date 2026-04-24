@@ -37,22 +37,21 @@ export async function POST(req: Request) {
       const errorText = response ? await response.text() : "No response from Render";
       console.error("OCR Server Error:", errorText);
 
-      // Fallback: Return empty structure with error flag so UI can handle it gracefully
-      if (type === "certificate") {
-        console.log("Certificate OCR failed, returning empty structure");
-        return NextResponse.json({ error: "OCR Service Unavailable" });
-      } else if (type === "transcript") {
-        console.log("Transcript OCR failed, returning empty structure");
-        return NextResponse.json({ error: "OCR Service Unavailable" });
-      } else {
-        return NextResponse.json({
-          error: "OCR Service Unavailable",
-          registration_no: "",
-          name: "",
-          gpa: "",
-          subjects: []
-        });
+      // Parse error message from OCR server if available
+      let errorMessage = "OCR Service Unavailable";
+      try {
+        const errorJson = JSON.parse(errorText);
+        if (errorJson.detail) {
+          errorMessage = errorJson.detail;
+        }
+      } catch {
+        // If not JSON, use raw error text
+        if (errorText && errorText !== "No response from Render") {
+          errorMessage = errorText;
+        }
       }
+
+      return NextResponse.json({ error: errorMessage }, { status: 400 });
     }
 
     const data = await response.json();
