@@ -228,16 +228,31 @@ export default function MarksheetTemplate({ data, id = "marksheet-pdf" }: { data
                   <td>ALLIED</td>
                   <td>{sub.code}</td>
                   <td className="left">{sub.title}</td>
-                  <td>{sub.credits}</td>
-                  <td>{sub.grade}</td>
-                  <td>{(parseFloat(sub.credits || "0") * parseFloat(sub.grade || "0")).toFixed(1)}</td>
+                  <td>{sub.credits || "-"}</td>
+                  <td>{sub.grade || "-"}</td>
+                  <td>
+                    {sub.credit_points && sub.credit_points !== "NaN" ? sub.credit_points : (
+                      (() => {
+                        const pts = parseFloat(sub.credits || "0") * parseFloat(sub.grade || "0");
+                        return isNaN(pts) ? (sub.credit_points || "-") : pts.toFixed(1);
+                      })()
+                    )}
+                  </td>
                 </tr>
               ))}
               <tr className="total-row">
                 <td colSpan={4} style={{ textAlign: 'right', paddingRight: 10 }}>Total :</td>
-                <td>{subjects.reduce((acc, s) => acc + (parseFloat(s.credits) || 0), 0).toFixed(1)}</td>
+                <td>{subjects.reduce((acc, s) => {
+                  const val = parseFloat(s.credits);
+                  return acc + (isNaN(val) ? 0 : val);
+                }, 0).toFixed(1)}</td>
                 <td>&mdash;</td>
-                <td>{subjects.reduce((acc, s) => acc + (parseFloat(s.credits || "0") * parseFloat(s.grade || "0")), 0).toFixed(1)}</td>
+                <td>{subjects.reduce((acc, s) => {
+                  const cp = parseFloat(s.credit_points);
+                  if (!isNaN(cp)) return acc + cp;
+                  const calc = parseFloat(s.credits || "0") * parseFloat(s.grade || "0");
+                  return acc + (isNaN(calc) ? 0 : calc);
+                }, 0).toFixed(1)}</td>
               </tr>
             </tbody>
           </table>
@@ -270,7 +285,22 @@ export default function MarksheetTemplate({ data, id = "marksheet-pdf" }: { data
                 <tbody>
                   <tr><td rowSpan={2}>I</td><td>FIRST</td><td>18</td><td>121.7</td><td>6.76</td><td>6.76</td></tr>
                   <tr><td>SECOND</td><td>17</td><td>124.5</td><td>7.32</td><td>7.03</td></tr>
-                  <tr><td>II</td><td>{semester}</td><td>{subjects.reduce((acc, s) => acc + (parseFloat(s.credits) || 0), 0).toFixed(1)}</td><td>{subjects.reduce((acc, s) => acc + (parseFloat(s.credits || "0") * parseFloat(s.grade || "0")), 0).toFixed(1)}</td><td>{gpa}</td><td>{gpa}</td></tr>
+                  <tr>
+                    <td>II</td>
+                    <td>{semester}</td>
+                    <td>{subjects.reduce((acc, s) => {
+                      const val = parseFloat(s.credits);
+                      return acc + (isNaN(val) ? 0 : val);
+                    }, 0).toFixed(1)}</td>
+                    <td>{subjects.reduce((acc, s) => {
+                      const cp = parseFloat(s.credit_points);
+                      if (!isNaN(cp)) return acc + cp;
+                      const calc = parseFloat(s.credits || "0") * parseFloat(s.grade || "0");
+                      return acc + (isNaN(calc) ? 0 : calc);
+                    }, 0).toFixed(1)}</td>
+                    <td>{gpa}</td>
+                    <td>{gpa}</td>
+                  </tr>
                 </tbody>
               </table>
             </div>

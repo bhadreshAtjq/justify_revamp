@@ -8,10 +8,17 @@ export function mapTranscriptPayload(data: any): any {
   const cleanCreditPoints = (val: any): string => {
     if (!val) return "";
     const str = String(val).trim();
-    // Remove non-numeric characters except decimal point
+    
+    // If it's a known placeholder or explicitly non-numeric, return standard '---'
+    if (str === "---" || str === "--" || str.toLowerCase() === "nan") return "---";
+
+    // Remove non-numeric characters except decimal point for calculation/standardization
     const cleaned = str.replace(/[^0-9.]/g, "");
-    // If result is empty or invalid, return empty string
-    if (!cleaned || cleaned === "." || isNaN(parseFloat(cleaned))) return "";
+    
+    // If result is empty or invalid, but the original wasn't empty, return original (to preserve things like "---")
+    if (!cleaned || cleaned === "." || isNaN(parseFloat(cleaned))) {
+      return str; 
+    }
     return cleaned;
   };
 
