@@ -24,34 +24,36 @@ export default function CertificateTemplate({ data, id = "certificate-pdf" }: { 
           background: #fff;
         }
         .certificate-page {
-          width: 950px;
-          margin: 0;
-          padding: 60px 80px;
+          width: 820px;
+          margin: 0 auto;
+          padding: 80px 60px;
           position: relative;
           background: #fff;
-          min-height: 700px;
+          min-height: 1120px;
           color: #000;
           font-family: "Garamond", "Baskerville", "Times New Roman", serif;
           box-shadow: 0 0 30px rgba(0,0,0,0.15);
           border: 15px double #1a4d2e;
           outline: 2px solid #1a4d2e;
           outline-offset: -20px;
+          display: flex;
+          flex-direction: column;
         }
         .cert-header {
           text-align: center;
           margin-bottom: 40px;
         }
         .cert-logo {
-          width: 100px;
-          margin-bottom: 15px;
+          width: 120px;
+          margin-bottom: 20px;
         }
         .cert-uni-name {
-          font-size: 32px;
+          font-size: 38px;
           font-weight: bold;
           text-transform: uppercase;
           color: #1a4d2e;
           margin: 0;
-          letter-spacing: 2px;
+          letter-spacing: 3px;
         }
         .cert-uni-location {
           font-size: 18px;
@@ -60,7 +62,8 @@ export default function CertificateTemplate({ data, id = "certificate-pdf" }: { 
         }
         .cert-body {
           text-align: center;
-          margin-top: 30px;
+          margin-top: 80px;
+          flex: 1;
         }
         .cert-title {
           font-size: 48px;
@@ -73,24 +76,26 @@ export default function CertificateTemplate({ data, id = "certificate-pdf" }: { 
           margin: 15px 0;
         }
         .cert-student-name {
-          font-size: 36px;
+          font-size: 42px;
           font-weight: bold;
           text-decoration: underline;
-          margin: 20px 0;
+          margin: 30px 0;
           display: block;
+          color: #111;
         }
         .cert-degree {
-          font-size: 32px;
+          font-size: 38px;
           font-weight: bold;
           color: #1a4d2e;
-          margin: 15px 0;
+          margin: 20px 0;
           display: block;
         }
         .cert-meta {
           display: flex;
           justify-content: space-between;
-          margin-top: 60px;
-          padding: 0 40px;
+          margin-top: 80px;
+          padding: 0 20px;
+          margin-bottom: 40px;
         }
         .cert-sig-block {
           text-align: center;
@@ -135,10 +140,14 @@ export default function CertificateTemplate({ data, id = "certificate-pdf" }: { 
 
       <div className="certificate-capture-wrapper">
         <div className="certificate-page">
+          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '18px', fontWeight: 'bold', marginBottom: '20px', textTransform: 'uppercase' }}>
+            <div>No. <span style={{ color: '#d32f2f' }}>{cert.no}</span></div>
+            <div>Certificate No. <span style={{ color: '#d32f2f' }}>{cert.certificate_no}</span></div>
+          </div>
           <div className="cert-header">
             <img src="/assets/uni_logo.jpg" alt="Logo" className="cert-logo" onError={(e) => e.currentTarget.style.display='none'} />
             <h1 className="cert-uni-name">Junagadh Agricultural University</h1>
-            <div className="cert-uni-location">Junagadh, Gujarat, India</div>
+            <div className="cert-uni-location" style={{ fontSize: '20px', marginTop: '8px' }}>Junagadh, Gujarat, India</div>
           </div>
 
           <div className="cert-body">
@@ -183,9 +192,9 @@ export default function CertificateTemplate({ data, id = "certificate-pdf" }: { 
                  <strong>Proof ID:</strong> {leafHash}
               </div>
             </div>
-            <div style={{ textAlign: 'right', minWidth: 100 }}>
-               <div style={{ fontSize: 10, fontWeight: 'bold' }}>Certificate No.</div>
-               <div style={{ fontSize: 14, fontWeight: 'bold', color: '#d32f2f' }}>{cert.no || cert.certificate_no}</div>
+            <div style={{ textAlign: 'right', minWidth: 140 }}>
+               <div style={{ fontSize: 12, fontWeight: 'bold', letterSpacing: '1px' }}>ACADEMIC YEAR</div>
+               <div style={{ fontSize: 18, fontWeight: 'bold', color: '#1a4d2e' }}>{cert.year}</div>
             </div>
           </div>
         </div>

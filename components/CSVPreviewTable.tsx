@@ -57,7 +57,7 @@ export default function CSVPreviewTable({
       const input = document.getElementById(templateId);
       if (!input) throw new Error("Template not found");
 
-      const isLandscape = type === "certificate";
+      const isLandscape = false; 
       const isMultiPage = type === "transcript";
 
       // Get all transcript pages
