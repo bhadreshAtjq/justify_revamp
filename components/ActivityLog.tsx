@@ -21,6 +21,7 @@ const iconMap: Record<ActivityLogEntry["type"], React.ReactNode> = {
   anchored: <FaLink />,
   ocr_complete: <FaSearch />,
   verified: <FaCheckCircle />,
+  quality_validated: <FaCheckCircle />,
 };
 
 export default function ActivityLog({ entries }: ActivityLogProps) {

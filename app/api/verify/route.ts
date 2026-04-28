@@ -11,7 +11,7 @@ export async function POST(req: Request) {
     }
 
     // 1. Initial on-chain check for the Leaf itself
-    let onChainResult = await verifyOnChain(docHash);
+    let onChainResult: any = await verifyOnChain(docHash);
 
     // 2. Fallback check for Merkle Root if DB link exists (internal optimization)
     const dbRecord = await prisma.studentRecord.findUnique({

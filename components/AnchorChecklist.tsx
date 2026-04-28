@@ -5,7 +5,7 @@ import { FaCheckSquare, FaSquare } from "react-icons/fa";
 
 export default function AnchorChecklist() {
   const store = useAppStore();
-  const { hashConfig, setHashConfig } = store;
+  const { hashConfig, updateHashConfig } = store;
 
   const options = [
     { id: 'includeRegNo', label: 'Registration Number', desc: 'Main student identifier', key: 'includeRegNo' as const },
@@ -25,7 +25,7 @@ export default function AnchorChecklist() {
         {options.map((opt) => (
           <div
             key={opt.id}
-            onClick={() => setHashConfig({ [opt.key]: !hashConfig[opt.key] })}
+            onClick={() => updateHashConfig({ [opt.key]: !hashConfig[opt.key] })}
             className={`inner-card ${hashConfig[opt.key] ? 'border-primary' : ''}`}
             style={{
               cursor: 'pointer',

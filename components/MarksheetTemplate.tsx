@@ -243,12 +243,12 @@ export default function MarksheetTemplate({ data, id = "marksheet-pdf" }: { data
               <tr className="total-row">
                 <td colSpan={4} style={{ textAlign: 'right', paddingRight: 10 }}>Total :</td>
                 <td>{subjects.reduce((acc, s) => {
-                  const val = parseFloat(s.credits);
+                  const val = parseFloat(s.credits || "0");
                   return acc + (isNaN(val) ? 0 : val);
                 }, 0).toFixed(1)}</td>
                 <td>&mdash;</td>
                 <td>{subjects.reduce((acc, s) => {
-                  const cp = parseFloat(s.credit_points);
+                  const cp = parseFloat(s.credit_points || "NaN");
                   if (!isNaN(cp)) return acc + cp;
                   const calc = parseFloat(s.credits || "0") * parseFloat(s.grade || "0");
                   return acc + (isNaN(calc) ? 0 : calc);
@@ -289,11 +289,11 @@ export default function MarksheetTemplate({ data, id = "marksheet-pdf" }: { data
                     <td>II</td>
                     <td>{semester}</td>
                     <td>{subjects.reduce((acc, s) => {
-                      const val = parseFloat(s.credits);
+                      const val = parseFloat(s.credits || "0");
                       return acc + (isNaN(val) ? 0 : val);
                     }, 0).toFixed(1)}</td>
                     <td>{subjects.reduce((acc, s) => {
-                      const cp = parseFloat(s.credit_points);
+                      const cp = parseFloat(s.credit_points || "NaN");
                       if (!isNaN(cp)) return acc + cp;
                       const calc = parseFloat(s.credits || "0") * parseFloat(s.grade || "0");
                       return acc + (isNaN(calc) ? 0 : calc);
