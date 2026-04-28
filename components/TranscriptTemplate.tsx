@@ -298,9 +298,9 @@ export default function TranscriptTemplate({ data, id = "transcript-pdf" }: { da
         }
         .transcript-main-table th, .transcript-main-table td {
           border: 1px solid #000;
-          padding: 3px 6px;
-          font-size: 11.5px;
-          line-height: 1.25;
+          padding: 4px 6px;
+          font-size: 12.5px;
+          line-height: 1.3;
         }
         .transcript-main-table th {
           background: #f0f0f0;
@@ -316,7 +316,8 @@ export default function TranscriptTemplate({ data, id = "transcript-pdf" }: { da
           text-align: right;
         }
         .course-row td {
-          padding: 2px 6px;
+          padding: 3px 6px;
+          font-size: 13px;
         }
 
         .verification-footer {
