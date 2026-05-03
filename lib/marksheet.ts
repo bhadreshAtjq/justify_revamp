@@ -1,10 +1,10 @@
 export interface Subject {
   code: string;
   title: string;
-
   credits: string;
   grade: string;
   credit_points?: string;
+  category?: string;
 }
 
 export function discoverSubjects(data: any): Subject[] {
@@ -13,39 +13,75 @@ export function discoverSubjects(data: any): Subject[] {
     : data.subjects || [];
 
   if (list.length === 0) {
-    const discovered: Record<string, Partial<Subject>> = {};
+    const discovered: Record<string, any> = {};
+    
+    const globalBlacklist = [
+      "registration", "regno", "studentname", "fullname", "name", "gpa", "ogpa", "cgpa", 
+      "faculty", "academicyear", "year", "degree", "semester", "major", "minor", "college", 
+      "institution", "examination", "total", "summary", "remarks", "status"
+    ];
+
     Object.keys(data).forEach(key => {
-      const trimmedKey = key.trim();
-      // Match patterns like Course_1_Code, Course_1_Credit_Points, Course_1_Grade_Points
-      const match = trimmedKey.match(/(Subject|Course|Sub)[\s_]?(\d+)[\s_]?(Credits_Points|Credit_Points|Grade_Points|Code|Title|Name|Number|Credits|Grade|Points)/i);
-      if (match) {
-        const index = match[2];
-        const type = match[3].toLowerCase();
+      const k = key; // Use raw key for index extraction
+      const lowerKey = k.toLowerCase().replace(/[\s_.]/g, '');
+      
+      // Extract numeric index or use trailing spaces as a fallback index
+      const indexMatch = k.match(/(?:Subject|Course|Sub|Row|S)[\s_]?(\d+)/i) || 
+                         k.match(/[\s_.]?(\d+)$/) ||
+                         k.match(/(\s+)$/);
+      
+      const index = indexMatch ? (indexMatch[1] || String(indexMatch[0].length)) : "0";
 
-        if (!discovered[index]) discovered[index] = {};
+      // Skip global metadata if NOT explicitly indexed (Subject 1 Name is ok, but Name is not)
+      if (!indexMatch && globalBlacklist.some(term => lowerKey.includes(term))) return;
 
-        const val = String(data[key] || "").trim();
-        if (type === 'code' || type === 'number') discovered[index].code = val;
-        if (type === 'title' || type === 'name') discovered[index].title = val;
-        if (type === 'credits') discovered[index].credits = val;
-        if (type === 'credit_points' || type === 'credits_points') discovered[index].credit_points = val;
+      if (!discovered[index]) discovered[index] = {};
+      const val = String(data[key] || "").trim();
+      const attrKey = k.toLowerCase();
 
-        if (type === 'grade' || type === 'grade_points' || (type === 'points' && !trimmedKey.toLowerCase().includes('credit'))) {
-          discovered[index].grade = val;
-        }
+      if (attrKey.includes('code') || attrKey.includes('number')) {
+        discovered[index].code = val;
+      } else if (attrKey.includes('title') || attrKey.includes('name')) {
+        discovered[index].title = val;
+      } else if (attrKey.includes('category')) {
+        discovered[index].category = val;
+      } else if (attrKey.includes('credit') && attrKey.includes('point')) {
+        discovered[index].credit_points = val;
+      } else if (attrKey.includes('grade') && attrKey.includes('point')) {
+        discovered[index].grade = val;
+      } else if (attrKey.includes('credit') || attrKey.includes('hour')) {
+        discovered[index].credits = val;
+      } else if (attrKey.includes('grade')) {
+        discovered[index].grade = val;
       }
     });
 
     list = Object.keys(discovered)
       .sort((a, b) => parseInt(a) - parseInt(b))
-      .map(k => ({
-        code: discovered[k].code || "N/A",
-        title: discovered[k].title || "Unknown Subject",
-        credits: discovered[k].credits || "-",
-        grade: discovered[k].grade || "-",
-        credit_points: discovered[k].credit_points || "-"
-      }))
-      .filter(s => s.code !== "N/A" || s.title !== "Unknown Subject");
+      .map(k => {
+        const current = discovered[k];
+        const hasData = current.code || current.title || current.credits || current.grade;
+        if (!hasData) return null;
+
+        const creditsNum = parseFloat(current.credits || "0");
+        const gradeNum = parseFloat(current.grade || "0");
+        let cpValue = current.credit_points;
+        
+        if (!cpValue || cpValue === "0" || parseFloat(cpValue) === 0) {
+          const calculated = creditsNum * gradeNum;
+          cpValue = isNaN(calculated) ? "---" : calculated.toFixed(1);
+        }
+
+        return {
+          code: current.code || "",
+          title: current.title || current.name || "",
+          credits: current.credits || "---",
+          grade: current.grade || current.points || "---",
+          credit_points: (cpValue === "NaN" || !cpValue) ? "---" : cpValue,
+          category: current.category || "ALLIED"
+        };
+      })
+      .filter((s): s is Subject => s !== null && (s.code !== "" || s.title !== ""));
   }
   return list;
 }
@@ -53,28 +89,27 @@ export function discoverSubjects(data: any): Subject[] {
 export function mapStudentMetadata(data: any) {
   const findVal = (patterns: string[]) => {
     for (const p of patterns) {
-      const match = Object.keys(data).find(k => k.trim().toLowerCase() === p.toLowerCase());
+      const match = Object.keys(data).find(k => {
+        const tk = k.trim().toLowerCase().replace(/[\s_.]/g, '');
+        const tp = p.toLowerCase().replace(/[\s_.]/g, '');
+        return tk === tp || tk.includes(tp);
+      });
       if (match) return data[match];
     }
     return null;
   };
 
-  const nameVal = String(findVal(["Student Name", "Full Name", "Student_Name", "name"]) || "N/A");
-
   return {
-    regNo: findVal(["Registration No", "Registration No.", "reg_no", "registration_no"]) || "N/A",
-    name: nameVal,
-    gpa: findVal(["GPA", "G.P.A", "gpa"]) || "0.00",
-    // Additional fields used by the PDF marksheet preview (NOT used in hash generation)
-    faculty: findVal(["Faculty", "faculty"]) || "POST-GRADUATE STUDIES",
-    academicYear: findVal(["Academic Year", "Academic_Year"]) || "2017-2018",
-    degree: findVal(["Degree Course", "degree", "Degree_Course"]) || "M.B.A. (AB)",
-
-    semester: findVal(["Semester", "semester"]) || "THIRD",
-    major: findVal(["Major Subject", "major", "Major_Subject"]) || "AGRI BUSINESS MANAGEMENT",
-    minor: findVal(["Minor Subject", "minor", "Minor_Subject"]) || "AGRI BUSINESS MANAGEMENT",
-    college: findVal(["College", "Name of College", "college"]) || "P.G. INSTITUTE OF AGRI - BUSINESS MANAGEMENT, JAU, JUNAGADH",
-    examination: findVal(["Examination Held In", "Examination_held_in", "examination"]) || "Dec.2017-Jan.2018",
+    regNo: findVal(["Registration No", "Reg No", "RegistrationNumber", "registration_no", "reg_no", "student_id", "Registration No."]) || "N/A",
+    name: findVal(["Student Name", "Name", "Full Name", "student_name", "full_name"]) || "Unknown Student",
+    gpa: findVal(["GPA", "OGPA", "CGPA", "Grade Point Average", "gpa", "ogpa"]) || "0.00",
+    faculty: findVal(["Faculty", "Department"]) || "Academic Affairs",
+    academicYear: findVal(["Academic Year", "Year", "Session"]) || "2017-2018",
+    degree: findVal(["Degree Course", "Degree_Course", "Degree", "Program", "Course"]) || "N/A",
+    semester: findVal(["Semester", "Term"]) || "N/A",
+    major: findVal(["Major Subject", "Major_Subject", "Major", "Branch", "Specialization"]) || "N/A",
+    minor: findVal(["Minor Subject", "Minor_Subject", "Minor"]) || "N/A",
+    college: findVal(["College", "Name of College", "University", "Institution"]) || "JustifAI Network",
+    examination: findVal(["Examination held in", "Examination Held In", "Examination", "Exam Session"]) || "N/A",
   };
 }
-

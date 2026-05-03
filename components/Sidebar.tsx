@@ -2,16 +2,22 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { FaColumns, FaShieldAlt, FaFlask } from "react-icons/fa";
-
-const navItems = [
-  { href: "/dashboard", label: "Dashboard", icon: FaColumns },
-  { href: "/verify", label: "Verify", icon: FaShieldAlt },
-  { href: "/sandbox", label: "Merkle Sandbox", icon: FaFlask },
-];
+import { FaColumns, FaShieldAlt, FaFlask, FaBuilding } from "react-icons/fa";
+import { useSession } from "next-auth/react";
 
 export default function Sidebar() {
   const pathname = usePathname();
+  const { data: session } = useSession();
+
+  const navItems = [
+    { href: "/dashboard", label: "Dashboard", icon: FaColumns },
+    { href: "/verify", label: "Verify", icon: FaShieldAlt },
+    { href: "/sandbox", label: "Merkle Sandbox", icon: FaFlask },
+  ];
+
+  if (session?.user?.role === "SUPER_ADMIN") {
+    navItems.push({ href: "/admin/tenants", label: "Tenants", icon: FaBuilding });
+  }
 
   return (
     <aside className="sidebar">

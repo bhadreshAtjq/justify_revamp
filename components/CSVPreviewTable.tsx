@@ -110,13 +110,13 @@ export default function CSVPreviewTable({
           const actualHeight = page.offsetHeight;
 
           const canvas = await html2canvas(page, {
-            scale: 2, // 2 is usually enough for high quality without crashing browser memory
+            scale: 1.5, // High quality but managed
             useCORS: true,
             logging: false,
             backgroundColor: "#ffffff",
           });
 
-          const imgData = canvas.toDataURL("image/jpeg", 1.0);
+          const imgData = canvas.toDataURL("image/jpeg", 0.8);
           
           // Calculate the height in PDF points based on the canvas aspect ratio
           // pdfWidth is already calculated correctly
@@ -159,7 +159,7 @@ export default function CSVPreviewTable({
         const actualHeight = clone.offsetHeight;
 
         const canvas = await html2canvas(clone, {
-          scale: 2.5,
+          scale: 1.5,
           useCORS: true,
           logging: false,
           backgroundColor: "#ffffff",
@@ -169,10 +169,11 @@ export default function CSVPreviewTable({
 
         document.body.removeChild(clone);
 
-        const imgData = canvas.toDataURL("image/jpeg", 0.92);
-        const canvasHeight = (canvas.width * (isLandscape ? 595.28 : 841.89)) / canvas.width;
+        const imgData = canvas.toDataURL("image/jpeg", 0.8);
+        const canvasHeight = (pdfWidth * canvas.height) / canvas.width;
 
-        pdf.addImage(imgData, "JPEG", 0, 0, pdfWidth, canvasHeight);
+        pdf.addImage(imgData, "JPEG", 0, 0, pdfWidth, canvasHeight, undefined, 'FAST');
+
 
         pdf.setFontSize(2);
         pdf.setTextColor(255, 255, 255);

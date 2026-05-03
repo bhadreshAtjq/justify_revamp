@@ -1,3 +1,5 @@
+@import "tailwindcss";
+
 /* Premium Design System for JustifAI */
 :root {
   --canvas: #EDF1D6;

@@ -7,6 +7,41 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+enum UserRole {
+  SUPER_ADMIN
+  INSTITUTION_ADMIN
+  ISSUER
+  AUDITOR
+  PUBLIC_VERIFIER
+}
+
+model Institution {
+  id               String           @id @default(cuid())
+  name             String           @unique
+  slug             String           @unique
+  users            User[]
+  records          StudentRecord[]
+  anchors          MerkleAnchor[]
+  hashProfiles     Json?            // Configuration for hashing
+  branding         Json?            // UI branding config
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
+}
+
+model User {
+  id            String      @id @default(cuid())
+  email         String      @unique
+  password      String
+  name          String?
+  role          UserRole    @default(PUBLIC_VERIFIER)
+  institutionId String?
+  institution   Institution? @relation(fields: [institutionId], references: [id])
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+
+  @@index([email])
+}
+
 model StudentRecord {
   id               String   @id @default(cuid())
   registrationNo   String
@@ -15,7 +50,12 @@ model StudentRecord {
   data             Json     // Full object payload
   keccak256Hash    String   @unique
   merkleLeaf       String?  // The leaf hash used in the Merkle Tree
+  type             String   @default("marksheet") // marksheet, certificate, transcript
+  status           String   @default("ACTIVE")    // ACTIVE, REVOKED, FROZEN
   createdAt        DateTime @default(now())
+
+  institutionId    String?
+  institution      Institution? @relation(fields: [institutionId], references: [id])
 
   anchorId         String?
   anchor           MerkleAnchor? @relation(fields: [anchorId], references: [id])
@@ -24,13 +64,17 @@ model StudentRecord {
   @@index([keccak256Hash])
 }
 
+
 model MerkleAnchor {
-  id          String   @id @default(cuid())
-  merkleRoot  String   @unique
-  txHash      String?
-  university  String?
-  year        String?
-  status      String   @default("pending") // pending, confirmed, failed
-  records     StudentRecord[]
-  createdAt   DateTime @default(now())
+  id            String   @id @default(cuid())
+  merkleRoot    String   @unique
+  txHash        String?
+  university    String?
+  year          String?
+  status        String   @default("pending") // pending, confirmed, failed
+  records       StudentRecord[]
+  institutionId String?
+  institution   Institution? @relation(fields: [institutionId], references: [id])
+  createdAt     DateTime @default(now())
 }
+

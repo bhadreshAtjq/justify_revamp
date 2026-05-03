@@ -172,9 +172,11 @@ export async function logAnchorToDB(anchorData: any): Promise<any> {
 /**
  * Fetch records from DB
  */
-export async function fetchRecordsFromDB(): Promise<any[]> {
-  const response = await fetch(`/api/records`);
+export async function fetchRecordsFromDB(type?: string): Promise<any[]> {
+  const url = type ? `/api/records?type=${type}` : `/api/records`;
+  const response = await fetch(url);
   if (!response.ok) throw new Error("Fetch failed");
   return await response.json();
 }
+
 

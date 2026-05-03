@@ -13,6 +13,20 @@ export function parseCSV(csvText: string): {
   }
 
   const headers = parseLine(lines[0]);
+  const uniqueHeaders: string[] = [];
+  const headerCounts: Record<string, number> = {};
+
+  headers.forEach(h => {
+    const clean = h.trim();
+    if (headerCounts[clean] === undefined) {
+      headerCounts[clean] = 0;
+      uniqueHeaders.push(clean);
+    } else {
+      headerCounts[clean]++;
+      uniqueHeaders.push(`${clean}_${headerCounts[clean]}`);
+    }
+  });
+
   const records: Record<string, string>[] = [];
 
   for (let i = 1; i < lines.length; i++) {
@@ -22,14 +36,15 @@ export function parseCSV(csvText: string): {
     const values = parseLine(line);
     const record: Record<string, string> = {};
 
-    headers.forEach((header, index) => {
+    uniqueHeaders.forEach((header, index) => {
       record[header] = values[index]?.trim() || "";
     });
 
     records.push(record);
   }
 
-  return { headers, records };
+  return { headers: uniqueHeaders, records };
+
 }
 
 /**
