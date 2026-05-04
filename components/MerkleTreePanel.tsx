@@ -23,10 +23,10 @@ export default function MerkleTreePanel({
 
   return (
     <div className="glass-card animate-slide-up">
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
         <div>
-          <h3 style={{ marginBottom: 4 }}>Merkle Root Construction</h3>
-          <p style={{ opacity: 0.6, fontSize: 13 }}>Final anchor point for this university session</p>
+          <h3 style={{ marginBottom: 4, fontSize: 15, fontWeight: 700 }}>Merkle Root Construction</h3>
+          <p style={{ color: '#929AAB', fontSize: 12 }}>Final anchor point for this university session</p>
         </div>
         {!merkleRoot && (
           <button
@@ -44,7 +44,7 @@ export default function MerkleTreePanel({
           <div className="root-emphasized">
             <p className="root-label"><FaFingerprint /> SECURE MERKLE ROOT</p>
             <p className="root-value">{merkleRoot}</p>
-            <div style={{ marginTop: 24 }}>
+            <div style={{ marginTop: 20 }}>
               <CopyButton text={merkleRoot} label="Copy Root" />
             </div>
           </div>
@@ -59,7 +59,7 @@ export default function MerkleTreePanel({
           </button>
 
           {showLeaves && (
-            <div className="noshadow-scroll" style={{ padding: 12, background: 'rgba(0,0,0,0.02)', borderRadius: 12 }}>
+            <div className="noshadow-scroll" style={{ padding: 10, background: 'var(--canvas)', borderRadius: 10 }}>
               {leaves.map((leaf, idx) => (
                 <div key={idx} className="hash-node">
                   <div className="hash-id">{idx + 1}</div>

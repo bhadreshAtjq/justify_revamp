@@ -58,10 +58,10 @@ export function discoverSubjects(data: any): Subject[] {
 
     list = Object.keys(discovered)
       .sort((a, b) => parseInt(a) - parseInt(b))
-      .map(k => {
+      .reduce((acc: Subject[], k) => {
         const current = discovered[k];
         const hasData = current.code || current.title || current.credits || current.grade;
-        if (!hasData) return null;
+        if (!hasData) return acc;
 
         const creditsNum = parseFloat(current.credits || "0");
         const gradeNum = parseFloat(current.grade || "0");
@@ -72,7 +72,7 @@ export function discoverSubjects(data: any): Subject[] {
           cpValue = isNaN(calculated) ? "---" : calculated.toFixed(1);
         }
 
-        return {
+        const subject: Subject = {
           code: current.code || "",
           title: current.title || current.name || "",
           credits: current.credits || "---",
@@ -80,8 +80,13 @@ export function discoverSubjects(data: any): Subject[] {
           credit_points: (cpValue === "NaN" || !cpValue) ? "---" : cpValue,
           category: current.category || "ALLIED"
         };
-      })
-      .filter((s): s is Subject => s !== null && (s.code !== "" || s.title !== ""));
+
+        if (subject.code !== "" || subject.title !== "") {
+          acc.push(subject);
+        }
+        
+        return acc;
+      }, []);
   }
   return list;
 }

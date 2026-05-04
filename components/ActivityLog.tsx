@@ -25,32 +25,31 @@ const iconMap: Record<ActivityLogEntry["type"], React.ReactNode> = {
 };
 
 export default function ActivityLog({ entries }: ActivityLogProps) {
-  // Fix hydration mismatch by only rendering timestamps on client
   const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []);
 
   if (entries.length === 0) {
     return (
       <div className="glass-card">
-        <h3 style={{ marginBottom: 12 }}>Activity Log</h3>
-        <p style={{ opacity: 0.5, fontSize: 13 }}>No recent activity to show</p>
+        <h3 style={{ marginBottom: 10, fontSize: 14, fontWeight: 700 }}>Activity Log</h3>
+        <p style={{ color: '#929AAB', fontSize: 13 }}>No recent activity to show</p>
       </div>
     );
   }
 
   return (
     <div className="glass-card">
-      <h3 style={{ marginBottom: 24 }}>Session Activity</h3>
+      <h3 style={{ marginBottom: 16, fontSize: 14, fontWeight: 700 }}>Session Activity</h3>
       <div className="noshadow-scroll" style={{ maxHeight: 300 }}>
         {entries.map((entry) => (
           <div key={entry.id} className="activity-entry animate-slide-up">
-            <div className="activity-icon" style={{ borderRadius: 8 }}>
+            <div className="activity-icon">
               {iconMap[entry.type]}
             </div>
             <div style={{ flex: 1, minWidth: 0 }}>
-              <p style={{ fontWeight: 600, fontSize: 13 }}>{entry.message}</p>
+              <p style={{ fontWeight: 500, fontSize: 13, color: '#222831', margin: 0 }}>{entry.message}</p>
               {mounted && (
-                <p className="activity-time">
+                <p className="activity-time" style={{ margin: 0 }}>
                   {entry.timestamp.toLocaleTimeString()}
                 </p>
               )}

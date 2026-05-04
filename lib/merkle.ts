@@ -1,14 +1,14 @@
 import { MerkleTree } from "merkletreejs";
-import { keccak256 } from "js-sha3";
+import { keccak256 } from "web3-utils";
 
 /**
  * Keccak256 hash function for MerkleTree library
  */
 function hasher(data: string | Buffer): Buffer {
-  // merkletreejs passes Buffer in internally for comparisons
-  const input = typeof data === "string" ? data : data.toString("hex");
-  const hash = keccak256(input);
-  return Buffer.from(hash, "hex");
+  // web3-utils keccak256 handles strings, hex strings, and buffers correctly
+  const hash = keccak256(data);
+  const clean = hash.startsWith("0x") ? hash.slice(2) : hash;
+  return Buffer.from(clean, "hex");
 }
 
 /**
@@ -21,7 +21,10 @@ export function buildMerkleTree(leafHashes: string[]): {
   leaves: string[];
 } {
   // Sort and unique for deterministic roots
-  const leaves = leafHashes.map((h) => Buffer.from(h, "hex"));
+  const leaves = leafHashes.map((h) => {
+    const clean = h.startsWith("0x") ? h.slice(2) : h;
+    return Buffer.from(clean, "hex");
+  });
   
   const tree = new MerkleTree(leaves, hasher, {
     sortPairs: true,
@@ -39,7 +42,8 @@ export function getMerkleProof(
   tree: MerkleTree,
   leafHash: string
 ): string[] {
-  const leaf = Buffer.from(leafHash, "hex");
+  const clean = leafHash.startsWith("0x") ? leafHash.slice(2) : leafHash;
+  const leaf = Buffer.from(clean, "hex");
   return tree.getProof(leaf).map((p) => p.data.toString("hex"));
 }
 
@@ -51,7 +55,8 @@ export function verifyLeaf(
   leafHash: string,
   root: string
 ): boolean {
-  const leaf = Buffer.from(leafHash, "hex");
+  const clean = leafHash.startsWith("0x") ? leafHash.slice(2) : leafHash;
+  const leaf = Buffer.from(clean, "hex");
   const proof = tree.getProof(leaf);
   return tree.verify(proof, leaf, root);
 }

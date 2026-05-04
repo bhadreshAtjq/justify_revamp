@@ -49,19 +49,19 @@ export default function FileUploadDropzone({
 
     return (
       <div className="inner-card animate-slide-up" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-          <div className="hash-id" style={{ width: 48, height: 48, fontSize: 20 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+          <div className="hash-id" style={{ width: 44, height: 44, fontSize: 18 }}>
             {isCsv && <FaFileCsv />}
             {isImage && <FaFileImage />}
             {isPdf && <FaFilePdf />}
             {!isCsv && !isImage && !isPdf && <FaUpload />}
           </div>
           <div>
-            <p style={{ fontWeight: 700, fontSize: 16 }}>{currentFile.name}</p>
-            <p style={{ opacity: 0.5, fontSize: 13 }}>{(currentFile.size / 1024).toFixed(1)} KB</p>
+            <p style={{ fontWeight: 600, fontSize: 14, color: '#222831' }}>{currentFile.name}</p>
+            <p style={{ color: '#929AAB', fontSize: 12 }}>{(currentFile.size / 1024).toFixed(1)} KB</p>
           </div>
         </div>
-        <button onClick={onClear} className="btn-premium btn-outline" style={{ padding: 12 }}>
+        <button onClick={onClear} className="btn-premium btn-outline" style={{ padding: 10 }}>
           <FaTimesCircle />
         </button>
       </div>
@@ -84,12 +84,12 @@ export default function FileUploadDropzone({
         onChange={handleFileChange}
         style={{ display: "none" }}
       />
-      <div className="dropzone-inner">
+      <div>
         <div className="dropzone-circle">
           <FaUpload />
         </div>
-        <h3 style={{ marginBottom: 8 }}>{isDragActive ? "Drop to Upload" : acceptLabel.replace('Only', '')}</h3>
-        <p style={{ opacity: 0.6 }}>{acceptLabel} (Max 10MB)</p>
+        <h3 style={{ marginBottom: 6, fontSize: 15, fontWeight: 600, color: '#222831' }}>{isDragActive ? "Drop to Upload" : acceptLabel.replace('Only', '')}</h3>
+        <p style={{ color: '#929AAB', fontSize: 13 }}>{acceptLabel} (Max 10MB)</p>
       </div>
     </div>
   );

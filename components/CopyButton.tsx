@@ -37,12 +37,12 @@ export default function CopyButton({ text, label, className = "" }: CopyButtonPr
     >
       {copied ? (
         <>
-          <FaCheckCircle style={{ width: 14, height: 14 }} />
+          <FaCheckCircle style={{ width: 12, height: 12 }} />
           {label ? "Copied" : null}
         </>
       ) : (
         <>
-          <FaCopy style={{ width: 14, height: 14 }} />
+          <FaCopy style={{ width: 12, height: 12 }} />
           {label || null}
         </>
       )}

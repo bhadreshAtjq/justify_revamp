@@ -1,8 +1,10 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
+import { toast } from "react-hot-toast";
+import { FaBuilding, FaPlus, FaCalendarAlt, FaLink, FaUserShield } from "react-icons/fa";
 
 export default function TenantsPage() {
   const { data: session } = useSession();
@@ -15,15 +17,7 @@ export default function TenantsPage() {
   const [adminPassword, setAdminPassword] = useState("");
   const [creating, setCreating] = useState(false);
 
-  useEffect(() => {
-    if (session?.user?.role !== "SUPER_ADMIN") {
-      router.push("/dashboard");
-    } else {
-      fetchTenants();
-    }
-  }, [session, router]);
-
-  const fetchTenants = async () => {
+  const fetchTenants = useCallback(async () => {
     setLoading(true);
     try {
       const res = await fetch("/api/admin/tenants");
@@ -34,7 +28,15 @@ export default function TenantsPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    if (session?.user?.role !== "SUPER_ADMIN") {
+      router.push("/dashboard");
+    } else {
+      fetchTenants();
+    }
+  }, [session, router, fetchTenants]);
 
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -51,117 +53,142 @@ export default function TenantsPage() {
         setAdminEmail("");
         setAdminPassword("");
         fetchTenants();
-        alert("Tenant created successfully! Use the provided credentials to login.");
+        toast.success("Tenant created successfully.");
       } else {
         const error = await res.json();
-        alert("Error: " + error.details || error.error);
+        toast.error(error.details || error.error);
       }
     } catch (err) {
       console.error(err);
+      toast.error("Failed to create tenant.");
     } finally {
       setCreating(false);
     }
   };
 
-  if (loading) return <div className="p-8">Loading tenants...</div>;
+  if (loading) return (
+    <div style={{ padding: 40, color: 'var(--accent)', fontSize: 13, fontWeight: 600 }}>
+      <div style={{ width: 16, height: 16, border: '2px solid var(--border)', borderTopColor: 'var(--primary)', borderRadius: '50%', animation: 'spin 0.6s linear infinite', marginBottom: 12 }} />
+      Contacting Registry...
+    </div>
+  );
 
   return (
     <div className="animate-slide-up">
-      <div className="section-meta">Administrative Control</div>
-      <h1 className="page-title">Tenant Management</h1>
-      <p className="page-subtitle">Configure institutions and platform-wide tenants.</p>
+      <div className="section-meta">PLATFORM ADMINISTRATION</div>
+      
+      <div style={{ marginBottom: 32 }}>
+        <h1 className="page-title">Tenant Management</h1>
+        <p className="page-subtitle">Configure and audit institution-wide tenants on the network.</p>
+      </div>
       
       <div className="glass-card">
-        <h2 className="text-lg font-semibold mb-6" style={{ color: 'var(--text-primary)' }}>Register New Institution</h2>
-        <form onSubmit={handleCreate} className="space-y-6">
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px' }}>
-            <div>
-              <label className="section-meta" style={{ display: 'block', fontSize: '11px', marginBottom: '8px' }}>Institution Name</label>
+        <h2 style={{ fontSize: 16, fontWeight: 700, marginBottom: 24, display: 'flex', alignItems: 'center', gap: 10 }}>
+          <FaPlus style={{ fontSize: 12, opacity: 0.5 }} /> Provision New Institution
+        </h2>
+
+        <form onSubmit={handleCreate}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 24, marginBottom: 32 }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+              <label style={{ fontSize: 12, fontWeight: 600, color: '#393E46' }}>Institution Name</label>
               <input 
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                style={{ width: '100%', padding: '12px', borderRadius: '12px', border: '1px solid rgba(0,0,0,0.1)', background: 'var(--canvas)' }}
+                className="btn-outline"
+                style={{ width: '100%', padding: '12px', borderRadius: 8, background: '#F7F7F7', cursor: 'text', textAlign: 'left' }}
                 placeholder="e.g. Stanford University"
                 required
               />
             </div>
-            <div>
-              <label className="section-meta" style={{ display: 'block', fontSize: '11px', marginBottom: '8px' }}>Unique Slug</label>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+              <label style={{ fontSize: 12, fontWeight: 600, color: '#393E46' }}>Unique Slug</label>
               <input 
                 value={slug}
                 onChange={(e) => setSlug(e.target.value)}
-                style={{ width: '100%', padding: '12px', borderRadius: '12px', border: '1px solid rgba(0,0,0,0.1)', background: 'var(--canvas)' }}
+                className="btn-outline"
+                style={{ width: '100%', padding: '12px', borderRadius: 8, background: '#F7F7F7', cursor: 'text', textAlign: 'left' }}
                 placeholder="e.g. stanford"
                 required
               />
             </div>
-            <div>
-              <label className="section-meta" style={{ display: 'block', fontSize: '11px', marginBottom: '8px' }}>Admin Login Email</label>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+              <label style={{ fontSize: 12, fontWeight: 600, color: '#393E46' }}>Admin Email</label>
               <input 
                 type="email"
                 value={adminEmail}
                 onChange={(e) => setAdminEmail(e.target.value)}
-                style={{ width: '100%', padding: '12px', borderRadius: '12px', border: '1px solid rgba(0,0,0,0.1)', background: 'var(--canvas)' }}
+                className="btn-outline"
+                style={{ width: '100%', padding: '12px', borderRadius: 8, background: '#F7F7F7', cursor: 'text', textAlign: 'left' }}
                 placeholder="admin@university.edu"
                 required
               />
             </div>
-            <div>
-              <label className="section-meta" style={{ display: 'block', fontSize: '11px', marginBottom: '8px' }}>Administrative Password</label>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+              <label style={{ fontSize: 12, fontWeight: 600, color: '#393E46' }}>Temporary Password</label>
               <input 
                 type="password"
                 value={adminPassword}
                 onChange={(e) => setAdminPassword(e.target.value)}
-                style={{ width: '100%', padding: '12px', borderRadius: '12px', border: '1px solid rgba(0,0,0,0.1)', background: 'var(--canvas)' }}
+                className="btn-outline"
+                style={{ width: '100%', padding: '12px', borderRadius: 8, background: '#F7F7F7', cursor: 'text', textAlign: 'left' }}
                 placeholder="••••••••"
                 required
               />
             </div>
           </div>
-          <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+          
+          <div style={{ display: 'flex', justifyContent: 'flex-end', borderTop: '1px solid #EEEEEE', paddingTop: 24 }}>
             <button 
               type="submit" 
               disabled={creating}
               className="btn-premium btn-solid"
-              style={{ padding: '12px 40px' }}
+              style={{ minWidth: 200 }}
             >
-              {creating ? "Creating Assets..." : "Finalize & Register Tenant"}
+              {creating ? "Provisioning..." : "Create Tenant"}
             </button>
           </div>
         </form>
       </div>
 
-
+      <div className="section-meta">ACTIVE TENANT REGISTRY</div>
       <div className="glass-card" style={{ padding: 0, overflow: 'hidden' }}>
-        <div className="table-container">
+        <div className="table-container" style={{ maxHeight: '500px', overflowY: 'auto' }}>
           <table className="premium-table">
             <thead>
               <tr>
-                <th>Institution Name</th>
-                <th>Slug</th>
-                <th>Created At</th>
+                <th style={{ paddingLeft: 24 }}>Institution</th>
+                <th>Access Slug</th>
+                <th>Registry Date</th>
+                <th style={{ textAlign: 'right', paddingRight: 24 }}>Status</th>
               </tr>
             </thead>
             <tbody>
               {tenants.map((t) => (
                 <tr key={t.id}>
-                  <td style={{ fontWeight: 600 }}>{t.name}</td>
-                  <td style={{ fontFamily: 'JetBrains Mono, monospace', opacity: 0.7 }}>{t.slug}</td>
-                  <td>{new Date(t.createdAt).toLocaleDateString()}</td>
-                </tr>
-              ))}
-              {tenants.length === 0 && (
-                <tr>
-                  <td colSpan={3} style={{ textAlign: 'center', padding: '40px', opacity: 0.5 }}>
-                    No tenants found. Create your first institution above.
+                  <td style={{ paddingLeft: 24 }}>
+                    <div style={{ fontWeight: 600 }}>{t.name}</div>
+                  </td>
+                  <td>
+                    <code style={{ background: '#EEEEEE', padding: '2px 6px', borderRadius: 4, fontSize: 12 }}>{t.slug}</code>
+                  </td>
+                  <td style={{ color: '#929AAB' }}>
+                    {new Date(t.createdAt).toLocaleDateString()}
+                  </td>
+                  <td style={{ textAlign: 'right', paddingRight: 24 }}>
+                    <span style={{ fontSize: 10, fontWeight: 700, color: 'var(--success)', background: 'rgba(45,106,79,0.1)', padding: '4px 8px', borderRadius: 4 }}>ACTIVE</span>
                   </td>
                 </tr>
-              )}
+              ))}
             </tbody>
           </table>
+          {tenants.length === 0 && (
+            <div style={{ padding: 40, textAlign: 'center', color: '#929AAB' }}>No institutions found.</div>
+          )}
         </div>
       </div>
     </div>
   );
 }
-

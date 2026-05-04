@@ -18,6 +18,7 @@ import AnchorChecklist from "@/components/AnchorChecklist";
 import HistorySection from "@/components/HistorySection";
 import { FaDownload, FaRocket, FaDatabase, FaShieldAlt, FaPlus, FaList, FaChartLine, FaSearch } from "react-icons/fa";
 import { toast } from "react-hot-toast";
+import { downloadSample } from "@/lib/samples";
 
 
 interface Institution {
@@ -39,18 +40,7 @@ export default function DashboardPage() {
   const [showInstDropdown, setShowInstDropdown] = useState(false);
 
 
-  // Auto-populate university name from session
-  useEffect(() => {
-    if (session?.user?.institutionName && !store.university) {
-      store.setUniversity(session.user.institutionName);
-    }
-    
-    if (session?.user?.role === "SUPER_ADMIN") {
-      fetchInstitutions();
-    }
-  }, [session, store]);
-
-  const fetchInstitutions = async () => {
+  const fetchInstitutions = useCallback(async () => {
     setIsInstLoading(true);
     try {
       const res = await fetch("/api/admin/tenants");
@@ -61,7 +51,18 @@ export default function DashboardPage() {
     } finally {
       setIsInstLoading(false);
     }
-  };
+  }, []);
+
+  // Auto-populate university name from session
+  useEffect(() => {
+    if (session?.user?.institutionName && !store.university) {
+      store.setUniversity(session.user.institutionName);
+    }
+    
+    if (session?.user?.role === "SUPER_ADMIN") {
+      fetchInstitutions();
+    }
+  }, [session, store, fetchInstitutions]);
 
   const filteredInstitutions = useMemo(() => {
     return institutions.filter(i => 
@@ -81,7 +82,8 @@ export default function DashboardPage() {
         const validation = validateCSVForHashing(headers, uploadType);
         
         if (!validation.valid) {
-          throw new Error(`Invalid CSV: Missing columns ${validation.missing.join(", ")}`);
+          const detail = validation.error || `Missing columns: ${validation.missing.join(", ")}`;
+          throw new Error(`Invalid CSV: ${detail}`);
         }
         
         store.setCSVData(headers, records);
@@ -90,11 +92,11 @@ export default function DashboardPage() {
         store.setLoading("isSyncing", true);
         try {
           await syncRecordsToDB(records, uploadType);
-          store.addActivityLog("csv_uploaded", "Database Synchronization Successful");
+          store.addActivityLog("csv_uploaded", "Database synchronization complete");
           setRefreshTrigger(prev => prev + 1);
         } catch (dbErr) {
           console.error("DB Sync Error:", dbErr);
-          store.addActivityLog("csv_uploaded", "Local cache active (DB Sync Pending)");
+          store.addActivityLog("csv_uploaded", "Local cache active (DB sync pending)");
         } finally {
           store.setLoading("isSyncing", false);
         }
@@ -141,16 +143,8 @@ export default function DashboardPage() {
         setAlreadyAnchored(true);
         const errorMsg = "This batch has already been anchored to the blockchain. Duplicate submissions are restricted.";
         store.setError(errorMsg);
-        toast.error(errorMsg, {
-          duration: 6000,
-          icon: '🛡️',
-          style: {
-            borderLeft: '4px solid #ef4444',
-            fontSize: '14px',
-            fontWeight: 600
-          }
-        });
-        store.addActivityLog("anchored", "PRE-VALIDATION: Duplicate Merkle Root detected in ledger.");
+        toast.error(errorMsg, { duration: 6000 });
+        store.addActivityLog("anchored", "Pre-validation: Duplicate Merkle Root detected in ledger.");
       }
 
 
@@ -164,7 +158,7 @@ export default function DashboardPage() {
 
   const handleAnchor = useCallback(async () => {
     if (!store.university.trim()) {
-      store.setError("Institutional Identity required to anchor root.");
+      store.setError("Institutional identity required to anchor root.");
       return;
     }
     store.setError(null);
@@ -188,32 +182,32 @@ export default function DashboardPage() {
 
   return (
     <div className="animate-slide-up">
-      <div className="page-header" style={{ marginBottom: 40 }}>
+      <div style={{ marginBottom: 32 }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
           <div>
             <div className="section-meta">INSTITUTIONAL HUB</div>
             <h1 className="page-title">Credential Management</h1>
             <p className="page-subtitle">Secure, verify, and anchor academic records to the global ledger.</p>
           </div>
-          <div className="glass-card" style={{ display: 'flex', gap: 8, padding: 6 }}>
+          <div style={{ display: 'flex', gap: 4, padding: 4, background: '#FFFFFF', borderRadius: 10, border: '1px solid rgba(57,62,70,0.08)' }}>
             <button 
               onClick={() => setActiveTab("upload")}
               className={`btn-premium ${activeTab === 'upload' ? 'btn-solid' : ''}`}
-              style={{ padding: '8px 16px', fontSize: 13, display: 'flex', alignItems: 'center', gap: 8 }}
+              style={{ padding: '8px 16px', fontSize: 12 }}
             >
               <FaPlus /> New Session
             </button>
             <button 
               onClick={() => setActiveTab("history")}
               className={`btn-premium ${activeTab === 'history' ? 'btn-solid' : ''}`}
-              style={{ padding: '8px 16px', fontSize: 13, display: 'flex', alignItems: 'center', gap: 8 }}
+              style={{ padding: '8px 16px', fontSize: 12 }}
             >
               <FaList /> Repository
             </button>
             <button 
               onClick={() => setActiveTab("analytics")}
               className={`btn-premium ${activeTab === 'analytics' ? 'btn-solid' : ''}`}
-              style={{ padding: '8px 16px', fontSize: 13, display: 'flex', alignItems: 'center', gap: 8 }}
+              style={{ padding: '8px 16px', fontSize: 12 }}
             >
               <FaChartLine /> Analytics
             </button>
@@ -222,24 +216,40 @@ export default function DashboardPage() {
       </div>
 
       {store.error && (
-        <div className="glass-card" style={{ background: 'rgba(255, 100, 100, 0.1)', border: '1px solid rgba(255, 0, 0, 0.2)', color: '#d32f2f', padding: '16px 24px', marginBottom: 32 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-            <FaShieldAlt />
-            <p style={{ fontWeight: 600 }}>System Alert: {store.error}</p>
-          </div>
+        <div style={{ 
+          background: 'rgba(192, 57, 43, 0.04)', 
+          border: '1px solid rgba(192, 57, 43, 0.12)', 
+          color: '#C0392B', 
+          padding: '14px 20px', 
+          marginBottom: 24, 
+          borderRadius: 10,
+          display: 'flex',
+          alignItems: 'center',
+          gap: 12,
+          fontSize: 13,
+          fontWeight: 500,
+        }}>
+          <FaShieldAlt style={{ flexShrink: 0 }} />
+          <p style={{ margin: 0 }}>{store.error}</p>
+          <button 
+            onClick={() => store.setError(null)}
+            style={{ marginLeft: 'auto', background: 'none', border: 'none', color: '#C0392B', cursor: 'pointer', fontSize: 16, padding: '2px 6px' }}
+          >
+            x
+          </button>
         </div>
       )}
 
       {activeTab === "upload" && (
-        <div style={{ display: 'grid', gridTemplateColumns: '1.6fr 1fr', gap: 40, alignItems: 'start' }}>
-          <div className="space-y-8">
-            <div className="glass-card" style={{ padding: '8px', display: 'flex', gap: '8px' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1.6fr) minmax(0, 1fr)', gap: 32, alignItems: 'start' }}>
+          <div className="space-y-8" style={{ minWidth: 0 }}>
+            <div style={{ display: 'flex', gap: 4, padding: 4, background: '#FFFFFF', borderRadius: 10, border: '1px solid rgba(57,62,70,0.08)' }}>
               {(["marksheet", "certificate", "transcript"] as const).map((t) => (
                 <button
                   key={t}
                   onClick={() => { setUploadType(t); store.resetDashboard(); }}
-                  className={`btn-premium ${uploadType === t ? "btn-solid" : "btn-outline"}`}
-                  style={{ flex: 1, padding: '12px', textTransform: 'capitalize' }}
+                  className={`btn-premium ${uploadType === t ? "btn-solid" : ""}`}
+                  style={{ flex: 1, padding: '10px', textTransform: 'capitalize', fontSize: 13 }}
                 >
                   {t}
                 </button>
@@ -247,7 +257,20 @@ export default function DashboardPage() {
             </div>
 
             <section className="animate-slide-up">
-              <div className="section-meta">STEP 01 — DATA SOURCE</div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+                <div className="section-meta" style={{ marginBottom: 0 }}>STEP 01 -- DATA SOURCE</div>
+                <button 
+                  onClick={() => downloadSample(uploadType)} 
+                  style={{ 
+                    background: 'none', border: 'none', color: '#393E46', fontSize: 10, fontWeight: 700, 
+                    display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', opacity: 0.6 
+                  }}
+                  onMouseEnter={(e) => (e.currentTarget.style.opacity = "1")}
+                  onMouseLeave={(e) => (e.currentTarget.style.opacity = "0.6")}
+                >
+                  <FaDownload /> DOWNLOAD {uploadType.toUpperCase()} TEMPLATE
+                </button>
+              </div>
               <FileUploadDropzone
                 accept=".csv"
                 acceptLabel={`${uploadType.charAt(0).toUpperCase() + uploadType.slice(1)} Data Ingestion (CSV)`}
@@ -259,9 +282,9 @@ export default function DashboardPage() {
 
             {store.csvHeaders.length > 0 && (
               <section className="animate-slide-up">
-                <div className="section-meta">STEP 02 — DATA VALIDATION</div>
+                <div className="section-meta">STEP 02 -- DATA VALIDATION</div>
                 <CSVPreviewTable headers={store.csvHeaders} records={store.csvRecords} fileName={""} type={uploadType} />
-                <div style={{ marginTop: 24 }}>
+                <div style={{ marginTop: 20 }}>
                   <AnchorChecklist />
                 </div>
               </section>
@@ -269,7 +292,7 @@ export default function DashboardPage() {
 
             {store.csvRecords.length > 0 && (
               <section className="animate-slide-up">
-                <div className="section-meta">STEP 03 — CRYPTOGRAPHIC SEALING</div>
+                <div className="section-meta">STEP 03 -- CRYPTOGRAPHIC SEALING</div>
                 <HashGeneratorPanel
                   hashes={store.hashes}
                   isGenerating={store.isGeneratingHashes}
@@ -277,7 +300,7 @@ export default function DashboardPage() {
                   canGenerate={true}
                 />
                 {store.hashes.length > 0 && (
-                  <div style={{ marginTop: 24 }}>
+                  <div style={{ marginTop: 20 }}>
                     <MerkleTreePanel
                       merkleRoot={store.merkleRoot}
                       leaves={store.merkleLeaves}
@@ -292,12 +315,12 @@ export default function DashboardPage() {
 
             {store.merkleRoot && (
               <section className="animate-slide-up">
-                <div className="section-meta">STEP 04 — BLOCKCHAIN ANCHORING</div>
+                <div className="section-meta">STEP 04 -- BLOCKCHAIN ANCHORING</div>
                 {!store.anchorResult ? (
                   <div className="glass-card">
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 24, marginBottom: 24 }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20, marginBottom: 20 }}>
                       <div style={{ position: 'relative' }}>
-                        <label className="section-meta" style={{ fontSize: 10 }}>Institution</label>
+                        <label style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '1.2px', color: '#929AAB', display: 'block', marginBottom: 8 }}>Institution</label>
                         
                         {session?.user?.role === "SUPER_ADMIN" ? (
                           <div style={{ position: 'relative' }}>
@@ -306,32 +329,32 @@ export default function DashboardPage() {
                               className="inner-card"
                               style={{ 
                                 cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                                padding: 16, fontSize: 14, background: 'var(--canvas)', borderRadius: 8
+                                padding: 14, fontSize: 13
                               }}
                             >
                               <span style={{ fontWeight: 600 }}>{store.university || "Select Institution"}</span>
-                              <FaPlus style={{ fontSize: 10, transform: showInstDropdown ? 'rotate(45deg)' : 'none', transition: '0.3s' }} />
+                              <FaPlus style={{ fontSize: 10, transform: showInstDropdown ? 'rotate(45deg)' : 'none', transition: '0.2s', color: '#929AAB' }} />
                             </div>
 
                             {showInstDropdown && (
                               <div className="glass-card animate-slide-up" style={{ 
                                 position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 100, 
-                                marginTop: 8, padding: 8, boxShadow: '0 20px 40px rgba(0,0,0,0.2)',
-                                maxHeight: 300, overflowY: 'auto'
+                                marginTop: 6, padding: 8, boxShadow: '0 12px 32px rgba(0,0,0,0.12)',
+                                maxHeight: 280, overflowY: 'auto'
                               }}>
                                 <div style={{ position: 'relative', marginBottom: 8 }}>
-                                  <FaSearch style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', opacity: 0.3 }} />
+                                  <FaSearch style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', opacity: 0.2, fontSize: 11 }} />
                                   <input 
                                     className="inner-card"
-                                    style={{ width: '100%', padding: '10px 10px 10px 36px', fontSize: 12, background: 'rgba(0,0,0,0.02)', border: '1px solid rgba(0,0,0,0.05)' }}
-                                    placeholder="Filter by name or slug..."
+                                    style={{ width: '100%', padding: '10px 10px 10px 32px', fontSize: 12, border: '1px solid rgba(57,62,70,0.08)' }}
+                                    placeholder="Filter by name..."
                                     value={instSearch}
                                     onChange={(e) => setInstSearch(e.target.value)}
                                     onClick={(e) => e.stopPropagation()}
                                   />
                                 </div>
                                 {filteredInstitutions.length === 0 ? (
-                                  <div style={{ padding: 12, textAlign: 'center', fontSize: 12, opacity: 0.5 }}>No institutions found</div>
+                                  <div style={{ padding: 12, textAlign: 'center', fontSize: 12, color: '#929AAB' }}>No institutions found</div>
                                 ) : (
                                   filteredInstitutions.map((inst) => (
                                     <div 
@@ -341,14 +364,16 @@ export default function DashboardPage() {
                                         store.setUniversity(inst.name);
                                         setShowInstDropdown(false);
                                       }}
-                                      className="hover:bg-slate-50 transition-colors"
                                       style={{ 
-                                        padding: '10px 12px', borderRadius: 6, cursor: 'pointer',
-                                        background: store.university === inst.name ? 'rgba(96,153,102,0.1)' : 'transparent'
+                                        padding: '10px 12px', borderRadius: 8, cursor: 'pointer',
+                                        background: store.university === inst.name ? 'rgba(57,62,70,0.04)' : 'transparent',
+                                        transition: 'background 0.15s',
                                       }}
+                                      onMouseEnter={(e) => { (e.target as HTMLDivElement).style.background = 'rgba(57,62,70,0.04)'; }}
+                                      onMouseLeave={(e) => { (e.target as HTMLDivElement).style.background = store.university === inst.name ? 'rgba(57,62,70,0.04)' : 'transparent'; }}
                                     >
-                                      <div style={{ fontSize: 13, fontWeight: 700, color: store.university === inst.name ? 'var(--primary)' : 'inherit' }}>{inst.name}</div>
-                                      <div style={{ fontSize: 10, opacity: 0.5 }}>{inst.slug}</div>
+                                      <div style={{ fontSize: 13, fontWeight: 600, color: store.university === inst.name ? '#393E46' : '#222831' }}>{inst.name}</div>
+                                      <div style={{ fontSize: 10, color: '#929AAB' }}>{inst.slug}</div>
                                     </div>
                                   ))
                                 )}
@@ -358,7 +383,7 @@ export default function DashboardPage() {
                         ) : (
                           <input
                             className="inner-card"
-                            style={{ width: '100%', border: 'none', padding: 16, fontSize: 14, background: 'var(--canvas)' }}
+                            style={{ width: '100%', border: 'none', padding: 14, fontSize: 13 }}
                             placeholder="e.g. Stanford University"
                             value={store.university}
                             onChange={(e) => store.setUniversity(e.target.value)}
@@ -367,10 +392,10 @@ export default function DashboardPage() {
                         )}
                       </div>
                       <div>
-                        <label className="section-meta" style={{ fontSize: 10 }}>Academic Year</label>
+                        <label style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '1.2px', color: '#929AAB', display: 'block', marginBottom: 8 }}>Academic Year</label>
                         <input
                           className="inner-card"
-                          style={{ width: '100%', border: 'none', padding: 16, fontSize: 14, background: 'var(--canvas)' }}
+                          style={{ width: '100%', border: 'none', padding: 14, fontSize: 13 }}
                           placeholder="2026"
                           value={store.year}
                           onChange={(e) => store.setYear(e.target.value)}
@@ -381,8 +406,9 @@ export default function DashboardPage() {
                       onClick={handleAnchor} 
                       className="btn-premium btn-solid btn-block" 
                       disabled={store.isAnchoring || alreadyAnchored}
+                      style={{ padding: 14 }}
                     >
-                      <FaRocket /> {store.isAnchoring ? "Broadcasting to Polygon..." : alreadyAnchored ? "Already Anchored to Ledger" : "Anchor Permanent Proof"}
+                      <FaRocket /> {store.isAnchoring ? "Broadcasting to Polygon..." : alreadyAnchored ? "Already Anchored" : "Anchor Permanent Proof"}
                     </button>
 
                   </div>
@@ -400,9 +426,10 @@ export default function DashboardPage() {
                         a.download = `proof-${store.university}.json`;
                         a.click();
                       }} 
-                      className="btn-premium btn-dark btn-block"
+                      className="btn-premium btn-solid btn-block"
+                      style={{ padding: 12 }}
                     >
-                      <FaDownload /> Global Session Proof (JSON)
+                      <FaDownload /> Download Session Proof (JSON)
                     </button>
                   </div>
                 )}
@@ -410,42 +437,42 @@ export default function DashboardPage() {
             )}
           </div>
 
-          <div className="space-y-8">
+          <div className="space-y-8" style={{ minWidth: 0 }}>
             <ActivityLog entries={store.activityLog} />
 
             <div className="glass-card">
-              <h3 style={{ marginBottom: 16, fontSize: 15, fontWeight: 700 }}>Infrastructure Pipeline</h3>
-              <div className="space-y-4">
+              <h3 style={{ marginBottom: 16, fontSize: 14, fontWeight: 700 }}>Infrastructure Status</h3>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 10, fontSize: 13 }}>
-                    <div className="animate-pulse" style={{ width: 8, height: 8, borderRadius: '50%', background: '#609966' }}></div>
+                    <div style={{ width: 6, height: 6, borderRadius: '50%', background: '#2D6A4F' }}></div>
                     <span>Blockchain Network</span>
                   </div>
-                  <span style={{ fontSize: 11, fontWeight: 700, color: '#609966' }}>ONLINE</span>
+                  <span style={{ fontSize: 10, fontWeight: 700, color: '#2D6A4F', letterSpacing: '0.5px' }}>ONLINE</span>
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 10, fontSize: 13 }}>
-                    <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#609966' }}></div>
+                    <div style={{ width: 6, height: 6, borderRadius: '50%', background: '#2D6A4F' }}></div>
                     <span>Database Cluster</span>
                   </div>
-                  <span style={{ fontSize: 11, fontWeight: 700, color: '#609966' }}>SYNCED</span>
+                  <span style={{ fontSize: 10, fontWeight: 700, color: '#2D6A4F', letterSpacing: '0.5px' }}>SYNCED</span>
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 10, fontSize: 13 }}>
-                    <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#609966' }}></div>
+                    <div style={{ width: 6, height: 6, borderRadius: '50%', background: '#2D6A4F' }}></div>
                     <span>Hash Engine (Keccak256)</span>
                   </div>
-                  <span style={{ fontSize: 11, fontWeight: 700, color: '#609966' }}>READY</span>
+                  <span style={{ fontSize: 10, fontWeight: 700, color: '#2D6A4F', letterSpacing: '0.5px' }}>READY</span>
                 </div>
               </div>
             </div>
             
             {store.isSyncing && (
-              <div className="glass-card animate-slide-up" style={{ background: 'var(--primary)', color: 'white', display: 'flex', alignItems: 'center', gap: 16 }}>
-                <FaDatabase className="animate-spin" />
+              <div className="glass-card animate-slide-up" style={{ background: '#393E46', color: '#F7F7F7', display: 'flex', alignItems: 'center', gap: 14, border: 'none' }}>
+                <FaDatabase />
                 <div>
-                  <div style={{ fontSize: 12, fontWeight: 800 }}>PERSISTENCE ACTIVE</div>
-                  <div style={{ fontSize: 10, opacity: 0.8 }}>Syncing local data to PostgreSQL...</div>
+                  <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.5px' }}>PERSISTENCE ACTIVE</div>
+                  <div style={{ fontSize: 10, opacity: 0.6 }}>Syncing local data to PostgreSQL...</div>
                 </div>
               </div>
             )}
@@ -455,13 +482,13 @@ export default function DashboardPage() {
 
       {activeTab === "history" && (
         <div className="space-y-8 animate-slide-up">
-           <div className="glass-card" style={{ padding: '8px', display: 'flex', gap: '8px', maxWidth: '600px' }}>
+           <div style={{ display: 'flex', gap: 4, padding: 4, background: '#FFFFFF', borderRadius: 10, border: '1px solid rgba(57,62,70,0.08)', maxWidth: 500 }}>
               {(["marksheet", "certificate", "transcript"] as const).map((t) => (
                 <button
                   key={t}
                   onClick={() => setUploadType(t)}
-                  className={`btn-premium ${uploadType === t ? "btn-solid" : "btn-outline"}`}
-                  style={{ flex: 1, padding: '12px', textTransform: 'capitalize' }}
+                  className={`btn-premium ${uploadType === t ? "btn-solid" : ""}`}
+                  style={{ flex: 1, padding: '10px', textTransform: 'capitalize', fontSize: 13 }}
                 >
                   {t}
                 </button>
@@ -473,9 +500,9 @@ export default function DashboardPage() {
 
       {activeTab === "analytics" && (
         <div className="glass-card animate-slide-up" style={{ padding: '80px', textAlign: 'center' }}>
-          <FaChartLine style={{ fontSize: 48, marginBottom: 24, opacity: 0.2 }} />
-          <h2>Predictive Insights</h2>
-          <p style={{ opacity: 0.6 }}>Analytics module is currently processing institutional data points.</p>
+          <FaChartLine style={{ fontSize: 40, marginBottom: 20, color: '#929AAB' }} />
+          <h2 style={{ fontSize: 20, fontWeight: 700, marginBottom: 8 }}>Predictive Insights</h2>
+          <p style={{ color: '#929AAB', fontSize: 14 }}>Analytics module is currently processing institutional data points.</p>
         </div>
       )}
     </div>

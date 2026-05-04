@@ -20,25 +20,25 @@ export default function VerificationCard({ result }: VerificationCardProps) {
 
   if (isRevoked) {
     icon = <FaExclamationTriangle />;
-    accentColor = "#FF6B6B";
+    accentColor = "#C0392B";
     label = "Blockchain Revoked";
     subtitle = "SECURITY ALERT";
     description = "This credential hash has been explicitly revoked on the public blockchain.";
   } else if (isAnchored) {
     icon = <FaCheckCircle />;
-    accentColor = "#609966";
+    accentColor = "#2D6A4F";
     label = "Verified On-Chain";
     subtitle = "POLYGON AMOY ANCHOR";
     description = "Deterministic proof: This document's hash is securely anchored on the immutable ledger.";
   } else if (isDBMatched) {
     icon = <FaExclamationTriangle />;
-    accentColor = "#E6BA95";
+    accentColor = "#B8860B";
     label = "Registry Found, Not Anchored";
     subtitle = "PENDING ON-CHAIN";
     description = "Legacy Match: We found a matching administrative record, but it lacks an on-chain anchor.";
   } else {
     icon = <FaTimesCircle />;
-    accentColor = "#40513B";
+    accentColor = "#393E46";
     label = "Verification Failed";
     subtitle = "HASH NOT FOUND";
     description = "This document hash does not exist on the public blockchain or in the central registry.";
@@ -46,34 +46,33 @@ export default function VerificationCard({ result }: VerificationCardProps) {
 
   return (
     <div className="animate-slide-up" style={{ 
-      background: 'white', 
-      borderRadius: 24, 
+      background: '#FFFFFF', 
+      borderRadius: 12, 
       overflow: 'hidden', 
-      boxShadow: '0 20px 40px rgba(0,0,0,0.05)',
-      border: '1px solid rgba(0,0,0,0.05)'
+      border: '1px solid rgba(57,62,70,0.08)',
     }}>
-      <div style={{ background: accentColor, padding: '40px 32px', textAlign: 'center', color: 'white' }}>
-        <div style={{ fontSize: 48, marginBottom: 16 }}>{icon}</div>
-        <p style={{ fontSize: 11, fontWeight: 900, letterSpacing: 3, opacity: 0.8, marginBottom: 8 }}>{subtitle}</p>
-        <h2 style={{ color: 'white', fontSize: 24 }}>{label}</h2>
+      <div style={{ background: accentColor, padding: '32px 24px', textAlign: 'center', color: 'white' }}>
+        <div style={{ fontSize: 40, marginBottom: 12 }}>{icon}</div>
+        <p style={{ fontSize: 10, fontWeight: 700, letterSpacing: 2.5, opacity: 0.7, marginBottom: 6 }}>{subtitle}</p>
+        <h2 style={{ color: 'white', fontSize: 20, fontWeight: 700 }}>{label}</h2>
       </div>
       
-      <div style={{ padding: '32px', textAlign: 'center' }}>
-        <p style={{ color: '#40513B', opacity: 0.7, marginBottom: 24 }}>{description}</p>
+      <div style={{ padding: '24px', textAlign: 'center' }}>
+        <p style={{ color: '#929AAB', marginBottom: 20, fontSize: 13 }}>{description}</p>
         
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
           {result.onChain.blockNumber && isAnchored && (
-            <div className="inner-card" style={{ padding: '12px 24px' }}>
-              <span style={{ fontSize: 11, fontWeight: 700, opacity: 0.5, textTransform: 'uppercase', marginRight: 12 }}>Blockchain Block</span>
-              <span style={{ fontFamily: 'JetBrains Mono', fontWeight: 800 }}>{result.onChain.blockNumber}</span>
+            <div className="inner-card" style={{ padding: '10px 20px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10 }}>
+              <span style={{ fontSize: 10, fontWeight: 700, color: '#929AAB', textTransform: 'uppercase' }}>Blockchain Block</span>
+              <span style={{ fontFamily: "'JetBrains Mono', monospace", fontWeight: 700, color: '#222831' }}>{result.onChain.blockNumber}</span>
             </div>
           )}
 
           {isDBMatched && result.db.name && (
-            <div className="inner-card" style={{ padding: '12px 24px', textAlign: 'left' }}>
-              <p style={{ fontSize: 11, fontWeight: 700, opacity: 0.5, textTransform: 'uppercase', marginBottom: 4 }}>Registered Student</p>
-              <p style={{ fontWeight: 800 }}>{result.db.name}</p>
-              <p style={{ fontSize: 12, opacity: 0.7 }}>Reg No: {result.db.registrationNo}</p>
+            <div className="inner-card" style={{ padding: '10px 20px', textAlign: 'left' }}>
+              <p style={{ fontSize: 10, fontWeight: 700, color: '#929AAB', textTransform: 'uppercase', marginBottom: 4 }}>Registered Student</p>
+              <p style={{ fontWeight: 700, color: '#222831' }}>{result.db.name}</p>
+              <p style={{ fontSize: 12, color: '#929AAB' }}>Reg No: {result.db.registrationNo}</p>
             </div>
           )}
         </div>

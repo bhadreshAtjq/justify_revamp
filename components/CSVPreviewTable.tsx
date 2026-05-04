@@ -248,52 +248,56 @@ export default function CSVPreviewTable({
   return (
     <div className="animate-slide-up" style={{ width: '100%', maxWidth: '100%' }}>
       {/* Header Bar */}
-      <div className="glass-card" style={{ padding: '16px 24px', marginBottom: 0, borderRadius: 'var(--radius-md) var(--radius-md) 0 0', display: 'flex', gap: 16, alignItems: 'center', justifyContent: 'space-between' }}>
-        <div style={{ display: 'flex', gap: 16, alignItems: 'center', flex: 1 }}>
+      <div className="glass-card" style={{ 
+        padding: '14px 20px', marginBottom: 0, borderRadius: '12px 12px 0 0', 
+        display: 'flex', gap: 14, alignItems: 'center', justifyContent: 'space-between',
+        flexWrap: 'wrap' 
+      }}>
+        <div style={{ display: 'flex', gap: 14, alignItems: 'center', flex: '1 1 300px' }}>
           <div style={{ position: 'relative', flex: 1, maxWidth: 400 }}>
-            <FaSearch style={{ position: 'absolute', left: 16, top: '50%', transform: 'translateY(-50%)', opacity: 0.4 }} />
+            <FaSearch style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)', color: '#929AAB', fontSize: 12 }} />
             <input 
               type="text" 
               placeholder="Search records..."
               value={searchQuery}
               onChange={(e) => { setSearchQuery(e.target.value); setCurrentPage(1); }}
-              style={{ width: '100%', padding: '12px 16px 12px 44px', borderRadius: 12, border: '2px solid var(--accent)', background: 'white', fontSize: 13, fontWeight: 600 }}
+              style={{ width: '100%', padding: '12px 14px 12px 40px', borderRadius: 8, border: '1px solid rgba(57,62,70,0.1)', background: '#FFFFFF', fontSize: 13, fontWeight: 500, fontFamily: 'inherit' }}
             />
           </div>
-          <button onClick={handleExportCSV} className="btn-premium" style={{ padding: '10px 18px', fontSize: 12, display: 'flex', alignItems: 'center', gap: 8 }}>
+          <button onClick={handleExportCSV} className="btn-premium btn-outline" style={{ padding: '10px 16px', fontSize: 11, display: 'flex', alignItems: 'center', gap: 6, fontWeight: 700 }}>
             <FaFileCsv /> EXPORT CSV
           </button>
         </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-          <span style={{ fontSize: 11, fontWeight: 800, opacity: 0.5 }}>ROWS</span>
-          <select value={pageSize} onChange={(e) => { setPageSize(Number(e.target.value)); setCurrentPage(1); }} className="inner-card" style={{ padding: '8px 12px', border: 'none', cursor: 'pointer', fontSize: 12, fontWeight: 700 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <span style={{ fontSize: 10, fontWeight: 700, color: '#929AAB' }}>ROWS</span>
+          <select value={pageSize} onChange={(e) => { setPageSize(Number(e.target.value)); setCurrentPage(1); }} className="inner-card" style={{ padding: '8px 12px', border: 'none', cursor: 'pointer', fontSize: 12, fontWeight: 600 }}>
             {[10, 20, 50, 100].map(size => <option key={size} value={size}>{size}</option>)}
           </select>
         </div>
       </div>
 
-      <div className="table-container" style={{ borderTop: 'none', borderRadius: 0 }}>
-        <table className="premium-table" style={{ width: 'max-content', minWidth: '100%' }}>
+      <div className="table-container" style={{ borderTop: 'none', borderRadius: 0, maxHeight: '500px', overflowY: 'auto' }}>
+        <table className="premium-table" style={{ width: '100%', tableLayout: 'auto' }}>
           <thead>
             <tr>
-              <th style={{ minWidth: 60, width: 60, position: 'sticky', left: 0, zIndex: 10, background: 'var(--accent)', color: 'white' }}>#</th>
+              <th style={{ minWidth: 60, width: 60, position: 'sticky', left: 0, zIndex: 10, background: '#393E46', color: '#F7F7F7' }}>#</th>
               {headers.map((header) => (
                 <th key={header} style={{ minWidth: 120 }}>{header.replace(/_/g, ' ')}</th>
               ))}
-              <th style={{ minWidth: 100, position: 'sticky', right: 0, zIndex: 10, background: 'var(--primary)', color: 'white' }}>ACTION</th>
+              <th style={{ minWidth: 100, position: 'sticky', right: 0, zIndex: 10, background: '#393E46', color: '#F7F7F7', boxShadow: '-2px 0 5px rgba(0,0,0,0.05)' }}>ACTION</th>
             </tr>
           </thead>
           <tbody>
             {currentRecords.map((record, idx) => (
               <tr key={idx}>
-                <td style={{ fontWeight: 800, opacity: 0.3, position: 'sticky', left: 0, zIndex: 5, background: 'var(--canvas)' }}>
+                <td style={{ fontWeight: 700, color: '#929AAB', position: 'sticky', left: 0, zIndex: 5, background: '#FFFFFF', borderRight: '1px solid var(--border)' }}>
                   {(currentPage - 1) * pageSize + idx + 1}
                 </td>
                 {headers.map((header) => (
-                  <td key={`${idx}-${header}`}>{record[header] || "—"}</td>
+                  <td key={`${idx}-${header}`}>{record[header] || "-"}</td>
                 ))}
-                <td style={{ position: 'sticky', right: 0, zIndex: 5, background: 'var(--canvas)', textAlign: 'center' }}>
-                  <button onClick={() => handlePreview(record)} style={{ padding: '8px 14px', background: 'var(--primary)', color: 'white', border: 'none', borderRadius: 8, fontSize: 11, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6 }}>
+                <td style={{ position: 'sticky', right: 0, zIndex: 5, background: '#FFFFFF', textAlign: 'center', borderLeft: '1px solid var(--border)', boxShadow: '-2px 0 5px rgba(0,0,0,0.05)' }}>
+                  <button onClick={() => handlePreview(record)} style={{ padding: '6px 14px', background: '#393E46', color: '#F7F7F7', border: 'none', borderRadius: 6, fontSize: 10, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, margin: '0 auto' }}>
                     <FaFileAlt /> VIEW
                   </button>
                 </td>
@@ -303,7 +307,7 @@ export default function CSVPreviewTable({
         </table>
       </div>
 
-      <div className="pagination-bar" style={{ borderTop: '2px solid rgba(0,0,0,0.05)' }}>
+      <div className="pagination-bar">
         <div className="pagination-info">Page <b>{currentPage}</b> of <b>{totalPages || 1}</b></div>
         <div className="pagination-controls">
           <button className="page-btn" onClick={() => goToPage(currentPage - 1)} disabled={currentPage === 1}><FaChevronLeft /></button>
@@ -313,35 +317,38 @@ export default function CSVPreviewTable({
 
       {selectedStudent && (
         <div style={{ position: 'fixed', inset: 0, zIndex: 9999, background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(10px)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <div className="glass-card" style={{ 
-            width: type === "certificate" ? '1100px' : '900px', 
+          <div style={{ 
+            width: '95%',
+            maxWidth: type === "certificate" ? '1100px' : '900px', 
             maxHeight: '95vh', 
             padding: 0, 
             overflow: 'hidden', 
             display: 'flex', 
             flexDirection: 'column', 
-            background: 'white' 
+            background: '#FFFFFF',
+            borderRadius: 12,
+            border: '1px solid rgba(57,62,70,0.08)',
           }}>
-            <div style={{ padding: '16px 24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #eee' }}>
-              <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
-                <FaFilePdf style={{ color: '#d32f2f', fontSize: 24 }} />
-                <h3 style={{ margin: 0, fontSize: 16 }}>Blockchain Verified {type.charAt(0).toUpperCase() + type.slice(1)}</h3>
+            <div style={{ padding: '14px 20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid rgba(57,62,70,0.06)' }}>
+              <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
+                <FaFilePdf style={{ color: '#C0392B', fontSize: 20 }} />
+                <h3 style={{ margin: 0, fontSize: 14, fontWeight: 700 }}>Blockchain Verified {type.charAt(0).toUpperCase() + type.slice(1)}</h3>
               </div>
               <div style={{ display: 'flex', gap: 8 }}>
                 <button 
                   onClick={handleDownloadPDF} 
                   disabled={isGenerating}
-                  className="btn-premium" 
-                  style={{ padding: '8px 20px', fontSize: 12, background: isGenerating ? '#999' : 'var(--primary)' }}
+                  className="btn-premium btn-solid" 
+                  style={{ padding: '8px 18px', fontSize: 11, fontWeight: 700 }}
                 >
                   <FaDownload /> {isGenerating ? "GENERATING..." : "DOWNLOAD PDF"}
                 </button>
-                <button onClick={() => setSelectedStudent(null)} style={{ background: '#eee', border: 'none', borderRadius: '50%', width: 34, height: 34, cursor: 'pointer' }}>
+                <button onClick={() => setSelectedStudent(null)} style={{ background: 'var(--canvas)', border: '1px solid var(--border)', borderRadius: 8, width: 30, height: 30, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14 }}>
                   <FaTimes />
                 </button>
               </div>
             </div>
-            <div style={{ flex: 1, overflowY: 'auto', background: '#f5f5f5', padding: '20px' }}>
+            <div style={{ flex: 1, overflowY: 'auto', background: '#F7F7F7', padding: '20px' }}>
               {type === "transcript" ? (
                 <TranscriptTemplate data={selectedStudent} />
               ) : type === "certificate" ? (

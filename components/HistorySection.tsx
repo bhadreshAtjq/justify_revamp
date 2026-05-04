@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useMemo, useRef } from "react";
+import React, { useState, useEffect, useMemo, useRef, useCallback } from "react";
 import { fetchRecordsFromDB } from "@/services/api";
 import { 
   FaEye, 
@@ -46,11 +46,7 @@ export default function HistorySection({ type, refreshTrigger }: HistorySectionP
     ids: string[];
   }>({ show: false, status: "", ids: [] });
 
-  useEffect(() => {
-    loadHistory();
-  }, [type, refreshTrigger]);
-
-  const loadHistory = async () => {
+  const loadHistory = useCallback(async () => {
     setLoading(true);
     try {
       const data = await fetchRecordsFromDB(type);
@@ -61,7 +57,11 @@ export default function HistorySection({ type, refreshTrigger }: HistorySectionP
     } finally {
       setLoading(false);
     }
-  };
+  }, [type]);
+
+  useEffect(() => {
+    loadHistory();
+  }, [loadHistory, refreshTrigger]);
 
   const handleStatusUpdate = (status: string, ids: string[] = selectedIds) => {
     setConfirmModal({ show: true, status, ids });
@@ -85,7 +85,7 @@ export default function HistorySection({ type, refreshTrigger }: HistorySectionP
     });
 
     toast.promise(promise, {
-      loading: `Broadcasting ${status} update to network...`,
+      loading: `Broadcasting ${status} update...`,
       success: `Successfully updated ${ids.length} records.`,
       error: "Transaction failed. Check network status.",
     });
@@ -172,7 +172,7 @@ export default function HistorySection({ type, refreshTrigger }: HistorySectionP
     });
 
     toast.promise(downloadPromise, {
-      loading: "Generating high-fidelity PDF...",
+      loading: "Generating PDF...",
       success: "Download started!",
       error: "PDF generation failed.",
     });
@@ -180,39 +180,39 @@ export default function HistorySection({ type, refreshTrigger }: HistorySectionP
 
   return (
     <div className="history-section animate-slide-up">
-      <div className="glass-card" style={{ padding: '20px', marginBottom: 24, borderRadius: 'var(--radius-md) var(--radius-md) 0 0' }}>
-        <div style={{ display: 'grid', gridTemplateColumns: 'minmax(300px, 1.5fr) 180px 180px 140px', gap: 16, alignItems: 'center' }}>
-          <div style={{ position: 'relative' }}>
-            <FaSearch style={{ position: 'absolute', left: 20, top: '50%', transform: 'translateY(-50%)', opacity: 0.2 }} />
+      <div className="glass-card" style={{ padding: '16px', marginBottom: 0, borderRadius: '12px 12px 0 0' }}>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12, alignItems: 'center' }}>
+          <div style={{ position: 'relative', flex: '1 1 280px' }}>
+            <FaSearch style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)', color: '#929AAB', fontSize: 12 }} />
             <input 
               type="text"
-              placeholder={`Quick search ${type}s...`}
+              placeholder={`Search ${type}s...`}
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="inner-card"
-              style={{ width: '100%', padding: '14px 16px 14px 52px', border: 'none', fontSize: 13, background: '#f8fafc' }}
+              style={{ width: '100%', padding: '12px 14px 12px 40px', border: 'none', fontSize: 13 }}
             />
           </div>
-          <div style={{ position: 'relative' }}>
-            <FaFilter style={{ position: 'absolute', left: 16, top: '50%', transform: 'translateY(-50%)', opacity: 0.2, fontSize: 12 }} />
+          <div style={{ position: 'relative', flex: '1 1 160px' }}>
+            <FaFilter style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)', color: '#929AAB', fontSize: 10 }} />
             <select 
               value={statusFilter}
               onChange={(e: any) => setStatusFilter(e.target.value)}
               className="inner-card"
-              style={{ width: '100%', padding: '14px 16px 14px 40px', border: 'none', fontSize: 12, fontWeight: 700, appearance: 'none' }}
+              style={{ width: '100%', padding: '12px 14px 12px 36px', border: 'none', fontSize: 12, fontWeight: 600, appearance: 'none', cursor: 'pointer' }}
             >
               <option value="all">Any Status</option>
               <option value="anchored">Anchored</option>
               <option value="pending">Pending</option>
             </select>
           </div>
-          <div style={{ position: 'relative' }}>
-            <FaCalendarAlt style={{ position: 'absolute', left: 16, top: '50%', transform: 'translateY(-50%)', opacity: 0.2, fontSize: 12 }} />
+          <div style={{ position: 'relative', flex: '1 1 160px' }}>
+            <FaCalendarAlt style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)', color: '#929AAB', fontSize: 10 }} />
             <select 
               value={yearFilter}
               onChange={(e) => setYearFilter(e.target.value)}
               className="inner-card"
-              style={{ width: '100%', padding: '14px 16px 14px 40px', border: 'none', fontSize: 12, fontWeight: 700, appearance: 'none' }}
+              style={{ width: '100%', padding: '12px 14px 12px 36px', border: 'none', fontSize: 12, fontWeight: 600, appearance: 'none', cursor: 'pointer' }}
             >
               <option value="all">All Sessions</option>
               {availableYears.map(y => (
@@ -220,51 +220,51 @@ export default function HistorySection({ type, refreshTrigger }: HistorySectionP
               ))}
             </select>
           </div>
-          <button onClick={loadHistory} className="btn-premium btn-outline" style={{ display: 'flex', gap: 10, justifyContent: 'center', padding: '14px' }}>
-             <span style={{ fontSize: 12, fontWeight: 800 }}>REFRESH</span>
+          <button onClick={loadHistory} className="btn-premium btn-outline" style={{ display: 'flex', gap: 8, justifyContent: 'center', padding: '12px', fontSize: 11, fontWeight: 700, flex: '1 1 100px' }}>
+             REFRESH
           </button>
         </div>
         {searchTerm || statusFilter !== 'all' || yearFilter !== 'all' ? (
-          <div style={{ marginTop: 16, display: 'flex', gap: 8, alignItems: 'center' }}>
-            <span style={{ fontSize: 11, fontWeight: 800, opacity: 0.4 }}>ACTIVE FILTERS</span>
-            {searchTerm && <span onClick={() => setSearchTerm('')} style={{ cursor: 'pointer', background: 'var(--accent)', color: 'white', padding: '4px 10px', borderRadius: 20, fontSize: 10, fontWeight: 700 }}>Search: {searchTerm} ×</span>}
-            {statusFilter !== 'all' && <span onClick={() => setStatusFilter('all')} style={{ cursor: 'pointer', background: 'var(--accent)', color: 'white', padding: '4px 10px', borderRadius: 20, fontSize: 10, fontWeight: 700 }}>Status: {statusFilter} ×</span>}
-            {yearFilter !== 'all' && <span onClick={() => setYearFilter('all')} style={{ cursor: 'pointer', background: 'var(--accent)', color: 'white', padding: '4px 10px', borderRadius: 20, fontSize: 10, fontWeight: 700 }}>Year: {yearFilter} ×</span>}
+          <div style={{ marginTop: 12, display: 'flex', gap: 6, alignItems: 'center' }}>
+            <span style={{ fontSize: 10, fontWeight: 700, color: '#929AAB' }}>ACTIVE FILTERS</span>
+            {searchTerm && <span onClick={() => setSearchTerm('')} style={{ cursor: 'pointer', background: '#393E46', color: '#F7F7F7', padding: '3px 10px', borderRadius: 16, fontSize: 10, fontWeight: 600 }}>Search: {searchTerm} x</span>}
+            {statusFilter !== 'all' && <span onClick={() => setStatusFilter('all')} style={{ cursor: 'pointer', background: '#393E46', color: '#F7F7F7', padding: '3px 10px', borderRadius: 16, fontSize: 10, fontWeight: 600 }}>Status: {statusFilter} x</span>}
+            {yearFilter !== 'all' && <span onClick={() => setYearFilter('all')} style={{ cursor: 'pointer', background: '#393E46', color: '#F7F7F7', padding: '3px 10px', borderRadius: 16, fontSize: 10, fontWeight: 600 }}>Year: {yearFilter} x</span>}
           </div>
         ) : null}
       </div>
 
       {selectedIds.length > 0 && (
         <div className="glass-card animate-slide-up" style={{ 
-          position: 'fixed', bottom: 40, left: '50%', transform: 'translateX(-50%)', 
-          zIndex: 1000, background: 'var(--primary)', color: 'white', padding: '16px 32px',
-          display: 'flex', gap: 24, alignItems: 'center', boxShadow: '0 20px 40px rgba(0,0,0,0.2)'
+          position: 'fixed', bottom: 32, left: '50%', transform: 'translateX(-50%)', 
+          zIndex: 1000, background: '#393E46', color: '#F7F7F7', padding: '14px 28px',
+          display: 'flex', gap: 20, alignItems: 'center', boxShadow: '0 12px 32px rgba(0,0,0,0.2)', border: 'none',
+          borderRadius: 12,
         }}>
-          <FaShieldAlt style={{ opacity: 0.5 }} />
-          <span style={{ fontSize: 13, fontWeight: 800 }}>{selectedIds.length} RECORDS SELECTED</span>
-          <div style={{ height: 20, width: 1, background: 'rgba(255,255,255,0.2)' }}></div>
-          <div style={{ display: 'flex', gap: 12 }}>
-            <button onClick={() => handleStatusUpdate('ACTIVE')} disabled={isUpdating} className="btn-premium" style={{ background: 'rgba(255,255,255,0.1)', color: 'white', display: 'flex', gap: 8, alignItems: 'center' }}>
+          <span style={{ fontSize: 12, fontWeight: 700 }}>{selectedIds.length} SELECTED</span>
+          <div style={{ height: 16, width: 1, background: 'rgba(255,255,255,0.15)' }}></div>
+          <div style={{ display: 'flex', gap: 8 }}>
+            <button onClick={() => handleStatusUpdate('ACTIVE')} disabled={isUpdating} className="btn-premium" style={{ background: 'rgba(255,255,255,0.1)', color: 'white', display: 'flex', gap: 6, alignItems: 'center', fontSize: 11 }}>
               <FaCheckCircle /> ACTIVATE
             </button>
-            <button onClick={() => handleStatusUpdate('FROZEN')} disabled={isUpdating} className="btn-premium" style={{ background: '#FFD93D', color: '#000', display: 'flex', gap: 8, alignItems: 'center' }}>
+            <button onClick={() => handleStatusUpdate('FROZEN')} disabled={isUpdating} className="btn-premium" style={{ background: '#B8860B', color: '#fff', display: 'flex', gap: 6, alignItems: 'center', fontSize: 11 }}>
               <FaLock /> FREEZE
             </button>
-            <button onClick={() => handleStatusUpdate('REVOKED')} disabled={isUpdating} className="btn-premium" style={{ background: '#FF6B6B', color: 'white', display: 'flex', gap: 8, alignItems: 'center' }}>
+            <button onClick={() => handleStatusUpdate('REVOKED')} disabled={isUpdating} className="btn-premium" style={{ background: '#C0392B', color: 'white', display: 'flex', gap: 6, alignItems: 'center', fontSize: 11 }}>
               <FaBan /> REVOKE
             </button>
           </div>
-          <button onClick={() => setSelectedIds([])} style={{ fontSize: 20, background: 'none', border: 'none', color: 'white', cursor: 'pointer', marginLeft: 20 }}>&times;</button>
+          <button onClick={() => setSelectedIds([])} style={{ fontSize: 18, background: 'none', border: 'none', color: 'rgba(255,255,255,0.5)', cursor: 'pointer', marginLeft: 12 }}>&times;</button>
         </div>
       )}
 
-      <div className="glass-card" style={{ padding: 0, overflow: 'hidden', borderTop: 'none' }}>
-        <div className="table-container" style={{ maxHeight: 'calc(100vh - 400px)', overflowY: 'auto' }}>
-          <table className="premium-table">
+      <div className="glass-card" style={{ padding: 0, overflow: 'hidden', borderTop: 'none', borderRadius: '0 0 12px 12px', marginTop: -1 }}>
+        <div className="table-container" style={{ maxHeight: '600px', overflowY: 'auto' }}>
+          <table className="premium-table" style={{ width: '100%', tableLayout: 'auto' }}>
             <thead>
               <tr>
                 <th style={{ width: 40 }}>
-                  <input type="checkbox" checked={selectedIds.length > 0 && selectedIds.length === filteredRecords.length && filteredRecords.length > 0} onChange={toggleAll} />
+                  <input type="checkbox" checked={selectedIds.length > 0 && selectedIds.length === filteredRecords.length && filteredRecords.length > 0} onChange={toggleAll} style={{ accentColor: '#393E46' }} />
                 </th>
                 <th>Registration</th>
                 <th>Subject / Name</th>
@@ -276,71 +276,71 @@ export default function HistorySection({ type, refreshTrigger }: HistorySectionP
             <tbody>
               {loading ? (
                 <tr>
-                  <td colSpan={6} style={{ textAlign: 'center', padding: '100px 0' }}>
-                    <div className="animate-pulse" style={{ fontSize: 13, fontWeight: 800, opacity: 0.3, letterSpacing: '0.1em' }}>SYNCHRONIZING DATABASE...</div>
+                  <td colSpan={6} style={{ textAlign: 'center', padding: '80px 0' }}>
+                    <div style={{ fontSize: 12, fontWeight: 700, color: '#929AAB', letterSpacing: '0.1em' }}>SYNCHRONIZING DATABASE...</div>
                   </td>
                 </tr>
               ) : filteredRecords.length === 0 ? (
                 <tr>
-                  <td colSpan={6} style={{ textAlign: 'center', padding: '100px 0', opacity: 0.3 }}>
+                  <td colSpan={6} style={{ textAlign: 'center', padding: '80px 0', color: '#929AAB' }}>
                     No matching institutional records found.
                   </td>
                 </tr>
               ) : (
                 filteredRecords.map((record) => (
-                  <tr key={record.id} className={`hover:bg-slate-50 transition-colors ${record.status === 'REVOKED' ? 'opacity-50 grayscale' : ''}`}>
+                  <tr key={record.id} style={{ opacity: record.status === 'REVOKED' ? 0.4 : 1, transition: 'opacity 0.18s' }}>
                     <td>
-                      <input type="checkbox" checked={selectedIds.includes(record.id)} onChange={() => toggleSelect(record.id)} />
+                      <input type="checkbox" checked={selectedIds.includes(record.id)} onChange={() => toggleSelect(record.id)} style={{ accentColor: '#393E46' }} />
                     </td>
-                    <td style={{ fontWeight: 800, fontFamily: 'var(--font-mono)', fontSize: 12 }}>{record.registrationNo}</td>
+                    <td style={{ fontWeight: 700, fontFamily: "'JetBrains Mono', monospace", fontSize: 12 }}>{record.registrationNo}</td>
                     <td>
-                      <div style={{ fontWeight: 600 }}>{record.name}</div>
-                      <div style={{ fontSize: 9, fontWeight: 800, opacity: 0.3 }}>{record.status}</div>
-                    </td>
-                    <td>
-                      <div style={{ fontWeight: 800, color: 'var(--primary)' }}>{record.gpa}</div>
-                      <div style={{ fontSize: 10, opacity: 0.5 }}>{new Date(record.createdAt).toLocaleDateString()}</div>
+                      <div style={{ fontWeight: 600, color: '#222831' }}>{record.name}</div>
+                      <div style={{ fontSize: 9, fontWeight: 700, color: '#929AAB' }}>{record.status}</div>
                     </td>
                     <td>
-                      <div className="flex flex-col gap-1">
+                      <div style={{ fontWeight: 700, color: '#393E46' }}>{record.gpa}</div>
+                      <div style={{ fontSize: 10, color: '#929AAB' }}>{new Date(record.createdAt).toLocaleDateString()}</div>
+                    </td>
+                    <td>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                          <div style={{ width: 6, height: 6, borderRadius: '50%', background: record.anchorId ? '#609966' : '#ccc' }}></div>
-                          <span style={{ fontSize: 10, fontWeight: 800, opacity: 0.6 }}>{record.anchorId ? 'ON-CHAIN' : 'OFF-CHAIN'}</span>
+                          <div style={{ width: 5, height: 5, borderRadius: '50%', background: record.anchorId ? '#2D6A4F' : '#EEEEEE' }}></div>
+                          <span style={{ fontSize: 10, fontWeight: 700, color: '#929AAB' }}>{record.anchorId ? 'ON-CHAIN' : 'OFF-CHAIN'}</span>
                         </div>
                         <div style={{ 
                           fontSize: 8, 
-                          fontWeight: 900, 
-                          padding: '3px 8px', 
-                          borderRadius: 6, 
-                          letterSpacing: '0.05em',
+                          fontWeight: 700, 
+                          padding: '2px 8px', 
+                          borderRadius: 4, 
+                          letterSpacing: '0.5px',
                           alignSelf: 'start',
-                          background: record.status === 'ACTIVE' ? 'rgba(96,153,102,0.1)' : record.status === 'FROZEN' ? 'rgba(255,217,61,0.1)' : 'rgba(255,107,107,0.1)',
-                          color: record.status === 'ACTIVE' ? '#609966' : record.status === 'FROZEN' ? '#B8860B' : '#FF6B6B'
+                          background: record.status === 'ACTIVE' ? 'rgba(45,106,79,0.06)' : record.status === 'FROZEN' ? 'rgba(184,134,11,0.06)' : 'rgba(192,57,43,0.06)',
+                          color: record.status === 'ACTIVE' ? '#2D6A4F' : record.status === 'FROZEN' ? '#B8860B' : '#C0392B'
                         }}>
                           {record.status}
                         </div>
                       </div>
                     </td>
                     <td style={{ textAlign: 'right' }}>
-                      <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
+                      <div style={{ display: 'flex', gap: 6, justifyContent: 'flex-end' }}>
                          {record.status === 'ACTIVE' ? (
-                           <button onClick={() => handleStatusUpdate('FROZEN', [record.id])} className="btn-premium" style={{ padding: '8px', fontSize: 12, background: '#f1f5f9' }} title="Freeze Record"><FaLock /></button>
+                           <button onClick={() => handleStatusUpdate('FROZEN', [record.id])} className="btn-premium" style={{ padding: '6px 8px', fontSize: 11, background: 'var(--canvas)', border: '1px solid var(--border)' }} title="Freeze Record"><FaLock /></button>
                          ) : (
-                           <button onClick={() => handleStatusUpdate('ACTIVE', [record.id])} className="btn-premium" style={{ padding: '8px', fontSize: 12, background: '#f1f5f9' }} title="Reactivate"><FaUndoAlt /></button>
+                           <button onClick={() => handleStatusUpdate('ACTIVE', [record.id])} className="btn-premium" style={{ padding: '6px 8px', fontSize: 11, background: 'var(--canvas)', border: '1px solid var(--border)' }} title="Reactivate"><FaUndoAlt /></button>
                          )}
-                         <button onClick={() => handleStatusUpdate('REVOKED', [record.id])} className="btn-premium" style={{ padding: '8px', fontSize: 12, background: '#fef2f2', color: '#ef4444' }} title="Revoke Forever"><FaBan /></button>
+                         <button onClick={() => handleStatusUpdate('REVOKED', [record.id])} className="btn-premium" style={{ padding: '6px 8px', fontSize: 11, background: 'rgba(192,57,43,0.04)', color: '#C0392B', border: '1px solid rgba(192,57,43,0.08)' }} title="Revoke"><FaBan /></button>
                         
                         <button 
                           onClick={() => setPreviewData(record.data)}
                           className="btn-premium" 
-                          style={{ padding: '8px 16px', fontSize: 11, fontWeight: 800, background: 'var(--surface)' }}
+                          style={{ padding: '6px 14px', fontSize: 10, fontWeight: 700, background: 'var(--canvas)', border: '1px solid var(--border)' }}
                         >
                           <FaEye /> PREVIEW
                         </button>
                         <button 
                           onClick={() => handleDownload(record.data)}
                           className="btn-premium" 
-                          style={{ padding: '8px 16px', fontSize: 11, fontWeight: 800, background: 'var(--accent)', color: 'white' }}
+                          style={{ padding: '6px 14px', fontSize: 10, fontWeight: 700, background: '#393E46', color: '#F7F7F7' }}
                         >
                           <FaDownload /> PDF
                         </button>
@@ -355,27 +355,27 @@ export default function HistorySection({ type, refreshTrigger }: HistorySectionP
       </div>
 
       {confirmModal.show && (
-        <div style={{ position: 'fixed', inset: 0, zIndex: 9999, background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(8px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
-          <div className="glass-card animate-slide-up" style={{ width: '100%', maxWidth: '400px', padding: '32px', textAlign: 'center' }}>
+        <div style={{ position: 'fixed', inset: 0, zIndex: 9999, background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(6px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
+          <div className="glass-card animate-slide-up" style={{ width: '100%', maxWidth: '380px', padding: '28px', textAlign: 'center' }}>
             <div style={{ 
-              width: 64, height: 64, borderRadius: '50%', margin: '0 auto 20px', 
-              background: confirmModal.status === 'REVOKED' ? '#fef2f2' : confirmModal.status === 'FROZEN' ? '#fffbeb' : '#f0fdf4',
+              width: 56, height: 56, borderRadius: '50%', margin: '0 auto 16px', 
+              background: confirmModal.status === 'REVOKED' ? 'rgba(192,57,43,0.06)' : confirmModal.status === 'FROZEN' ? 'rgba(184,134,11,0.06)' : 'rgba(45,106,79,0.06)',
               display: 'flex', alignItems: 'center', justifyContent: 'center', 
-              fontSize: 24, color: confirmModal.status === 'REVOKED' ? '#ef4444' : confirmModal.status === 'FROZEN' ? '#f59e0b' : '#22c55e'
+              fontSize: 20, color: confirmModal.status === 'REVOKED' ? '#C0392B' : confirmModal.status === 'FROZEN' ? '#B8860B' : '#2D6A4F'
             }}>
               {confirmModal.status === 'REVOKED' ? <FaBan /> : confirmModal.status === 'FROZEN' ? <FaLock /> : <FaCheckCircle />}
             </div>
-            <h3 style={{ margin: '0 0 8px', fontSize: 18, color: 'var(--text-primary)' }}>Are you sure?</h3>
-            <p style={{ margin: '0 0 24px', fontSize: 14, opacity: 0.6, lineHeight: 1.6 }}>
-              You are about to set {confirmModal.ids.length} record(s) to <b>{confirmModal.status}</b>. 
+            <h3 style={{ margin: '0 0 8px', fontSize: 17, fontWeight: 700, color: '#222831' }}>Are you sure?</h3>
+            <p style={{ margin: '0 0 20px', fontSize: 13, color: '#929AAB', lineHeight: 1.6 }}>
+              You are about to set {confirmModal.ids.length} record(s) to <b style={{ color: '#222831' }}>{confirmModal.status}</b>. 
               {confirmModal.status === 'REVOKED' && " This action will be broadcasted to the blockchain and is permanent."}
             </p>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
               <button onClick={() => setConfirmModal({ ...confirmModal, show: false })} className="btn-premium btn-outline">CANCEL</button>
               <button 
                 onClick={executeStatusUpdate} 
                 className="btn-premium" 
-                style={{ background: confirmModal.status === 'REVOKED' ? '#ef4444' : confirmModal.status === 'FROZEN' ? '#f59e0b' : 'var(--primary)', color: 'white' }}
+                style={{ background: confirmModal.status === 'REVOKED' ? '#C0392B' : confirmModal.status === 'FROZEN' ? '#B8860B' : '#2D6A4F', color: 'white' }}
               >
                 CONFIRM
               </button>
@@ -385,11 +385,11 @@ export default function HistorySection({ type, refreshTrigger }: HistorySectionP
       )}
 
       {previewData && !isExporting && (
-        <div style={{ position: 'fixed', inset: 0, zIndex: 9000, background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '40px' }}>
-          <div className="glass-card" style={{ width: '100%', maxWidth: '900px', maxHeight: '90vh', overflow: 'hidden', display: 'flex', flexDirection: 'column', background: 'white' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '16px 24px', borderBottom: '1px solid #eee' }}>
-              <h3 style={{ margin: 0 }}>Institutional Preview</h3>
-              <button onClick={() => setPreviewData(null)} style={{ background: '#eee', border: 'none', borderRadius: '50%', width: 32, height: 32, cursor: 'pointer' }}>&times;</button>
+        <div style={{ position: 'fixed', inset: 0, zIndex: 9000, background: 'rgba(0,0,0,0.4)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '32px' }}>
+          <div style={{ width: '95%', maxWidth: '900px', maxHeight: '90vh', overflow: 'hidden', display: 'flex', flexDirection: 'column', background: '#FFFFFF', borderRadius: 12, border: '1px solid rgba(57,62,70,0.08)' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '14px 20px', borderBottom: '1px solid rgba(57,62,70,0.06)' }}>
+              <h3 style={{ margin: 0, fontSize: 14, fontWeight: 700 }}>Institutional Preview</h3>
+              <button onClick={() => setPreviewData(null)} style={{ background: 'var(--canvas)', border: '1px solid var(--border)', borderRadius: 8, width: 30, height: 30, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14 }}>&times;</button>
             </div>
             <div style={{ flex: 1, overflowY: 'auto' }}>
               {type === "marksheet" && <MarksheetTemplate data={previewData} />}

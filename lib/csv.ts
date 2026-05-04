@@ -81,42 +81,84 @@ function parseLine(line: string): string[] {
 export function validateCSVForHashing(headers: string[], type: string = "marksheet"): {
   valid: boolean;
   missing: string[];
+  error?: string;
 } {
-  const normalizedHeaders = headers.map((h) => h.toLowerCase().replace(/\s+/g, "_"));
-
-  let requiredMappings: { key: string; aliases: string[] }[] = [];
-
-  if (type === "certificate") {
-    requiredMappings = [
-      { key: "name", aliases: ["name", "student_name", "full_name"] }
-    ];
-    // Check for either certificate_no OR registration_no
-    const idAliases = ["certificate_no", "cert_no", "no", "reg_no", "registration_no", "serial_no", "certificate_no"];
-    const hasID = idAliases.some(alias => normalizedHeaders.includes(alias.toLowerCase()));
-    
-    const missing: string[] = [];
-    if (!hasID) missing.push("certificate_no/registration_no");
-    
-    for (const req of requiredMappings) {
-      const found = req.aliases.some((alias) => normalizedHeaders.includes(alias));
-      if (!found) missing.push(req.key);
-    }
-    return { valid: missing.length === 0, missing };
-  } 
-
-  // For Transcripts and Marksheets
-  requiredMappings = [
-    { key: "registration_no", aliases: ["registration_no", "registrationno", "reg_no"] },
-    { key: "name", aliases: ["name", "student_name", "full_name"] },
-  ];
-
+  const normalizedHeaders = headers.map((h) => h.toLowerCase().replace(/[\s.]+/g, "_"));
   const missing: string[] = [];
 
-  for (const req of requiredMappings) {
-    const found = req.aliases.some((alias) => normalizedHeaders.includes(alias));
-    if (!found) {
-      missing.push(req.key);
+  if (type === "certificate") {
+    const required = [
+      { key: "Student Name", aliases: ["name", "student_name", "full_name", "student_name"] },
+      { key: "Certificate/Registration No", aliases: ["certificate_no", "cert_no", "no", "reg_no", "registration_no", "serial_no"] },
+      { key: "Degree/Course", aliases: ["degree", "course", "program"] },
+      { key: "Year", aliases: ["year", "academic_year", "completion_year", "session"] }
+    ];
+
+    for (const req of required) {
+      const found = req.aliases.some(alias => normalizedHeaders.includes(alias.toLowerCase()));
+      if (!found) missing.push(req.key);
     }
+
+    if (missing.length > 0) return { valid: false, missing };
+    
+    // Check if it's accidentally a marksheet (has GPA and Subject columns)
+    const hasGPA = ["gpa", "ogpa", "cgpa"].some(a => normalizedHeaders.includes(a));
+    const hasSubject = headers.some(h => /(?:Subject|Course|Sub|Row|S)[\s_]?\d+/i.test(h));
+    const hasSemData = headers.some(h => /^sem\d+_/i.test(h));
+    
+    if (hasGPA && hasSubject) {
+      return { valid: false, missing: [], error: "This looks like a Marksheet CSV. Please select 'Marksheet' type above." };
+    }
+    if (hasSemData) {
+      return { valid: false, missing: [], error: "This looks like a Transcript CSV. Please select 'Transcript' type above." };
+    }
+
+    return { valid: true, missing: [] };
+  } 
+
+  if (type === "transcript") {
+    // Transcripts MUST have Semester-prefixed columns
+    const hasSemData = headers.some(h => /^sem\d+_/i.test(h));
+    if (!hasSemData) {
+      return { valid: false, missing: ["Semester Columns (Sem1_Year, etc.)"], error: "Missing transcript-specific columns (e.g., Sem1_Year, Sem1_C1_Code). This does not appear to be a Transcript CSV." };
+    }
+
+    const required = [
+      { key: "Registration No", aliases: ["registration_no", "registrationno", "reg_no", "registration_no"] },
+      { key: "Student Name", aliases: ["name", "student_name", "full_name"] },
+      { key: "Degree", aliases: ["degree", "program"] }
+    ];
+
+    for (const req of required) {
+      const found = req.aliases.some(alias => normalizedHeaders.includes(alias.toLowerCase()));
+      if (!found) missing.push(req.key);
+    }
+
+    return { valid: missing.length === 0, missing };
+  }
+
+  // Default: Marksheet
+  const required = [
+    { key: "Registration No", aliases: ["registration_no", "registrationno", "reg_no"] },
+    { key: "Student Name", aliases: ["name", "student_name", "full_name"] },
+    { key: "GPA/OGPA", aliases: ["gpa", "ogpa", "cgpa"] }
+  ];
+
+  for (const req of required) {
+    const found = req.aliases.some(alias => normalizedHeaders.includes(alias.toLowerCase()));
+    if (!found) missing.push(req.key);
+  }
+
+  // Marksheets MUST have indexed columns (Subject 1, Course 1, etc.)
+  const hasIndexedColumns = headers.some(h => /(?:Subject|Course|Sub|Row|S)[\s_]?\d+/i.test(h));
+  if (!hasIndexedColumns && missing.length === 0) {
+    return { valid: false, missing: ["Subject/Course Columns"], error: "Marksheet CSVs must contain indexed columns like 'Subject 1 Name', 'Subject 1 Grade', etc." };
+  }
+
+  // Check if it's accidentally a transcript
+  const isTranscript = headers.some(h => /^sem\d+_/i.test(h));
+  if (isTranscript) {
+    return { valid: false, missing: [], error: "This looks like a Transcript CSV. Please select 'Transcript' type above." };
   }
 
   return { valid: missing.length === 0, missing };

@@ -1,22 +1,31 @@
-import { auth } from "@/auth";
+import NextAuth from "next-auth";
+import { authConfig } from "./auth.config";
 import { NextResponse } from "next/server";
-import { UserRole } from "@prisma/client";
+
+const { auth } = NextAuth(authConfig);
 
 export default auth((req) => {
   const { nextUrl } = req;
   const isLoggedIn = !!req.auth;
 
   const isApiAuthRoute = nextUrl.pathname.startsWith("/api/auth");
-  const isPublicRoute = ["/login", "/verify"].includes(nextUrl.pathname);
+  const isPublicRoute = ["/", "/login", "/verify"].includes(nextUrl.pathname);
   const isAuthRoute = ["/login"].includes(nextUrl.pathname);
 
   if (isApiAuthRoute) {
     return NextResponse.next();
   }
 
+  // Homepage: always accessible
+  if (nextUrl.pathname === "/") {
+    return NextResponse.next();
+  }
+
   if (isAuthRoute) {
     if (isLoggedIn) {
-      return NextResponse.redirect(new URL("/dashboard", nextUrl));
+      const userRole = req.auth?.user?.role;
+      const destination = userRole === "PUBLIC_VERIFIER" ? "/verify" : "/dashboard";
+      return NextResponse.redirect(new URL(destination, nextUrl));
     }
     return NextResponse.next();
   }
@@ -29,11 +38,13 @@ export default auth((req) => {
   if (isLoggedIn) {
     const userRole = req.auth?.user?.role;
 
-    if (nextUrl.pathname.startsWith("/admin") && userRole !== UserRole.SUPER_ADMIN) {
+    if (nextUrl.pathname.startsWith("/admin") && userRole !== "SUPER_ADMIN") {
       return NextResponse.redirect(new URL("/dashboard", nextUrl));
     }
 
-    // Add more RBAC rules here
+    if (nextUrl.pathname.startsWith("/dashboard") && userRole === "PUBLIC_VERIFIER") {
+      return NextResponse.redirect(new URL("/verify", nextUrl));
+    }
   }
 
   return NextResponse.next();

@@ -23,7 +23,6 @@ export default function VerifyPage() {
       store.setVerifyFile(file);
       
       try {
-        // 1. Initial Quality Validation (Skip for transcripts)
         if (verifyType !== "transcript") {
           store.setLoading("isValidatingQuality", true);
           const quality = await validateQuality(file);
@@ -34,22 +33,18 @@ export default function VerifyPage() {
           store.setQualityResult({ is_valid: true, message: "Transcript processing includes inline validation" });
         }
 
-        // 2. OCR Extraction
         store.setLoading("isProcessingOCR", true);
         const result = await processOCR(file, verifyType);
         console.log("DEBUG: Raw OCR Result JSON ->", JSON.stringify(result, null, 2));
         
-        // Ensure result fields are present
         if (!result.registration_no || !result.name) {
           console.warn("DEBUG: OCR result missing critical fields (reg_no or name)");
         }
 
-        // 3. Recalculate hash in frontend (DETERMINISTIC)
         const hash = generateStudentHash(result, store.hashConfig, verifyType);
         console.log(`DEBUG: Final Generated Hash (${verifyType}) ->`, hash);
         store.setVerifyHash(hash);
 
-        // 4. Set result for display
         store.setOCRResult(result);
         
         store.addActivityLog("ocr_complete", `OCR extraction complete for ${result.name}. Hash: ${hash.slice(0, 12)}...`);
@@ -84,31 +79,31 @@ export default function VerifyPage() {
 
   return (
     <div className="animate-slide-up">
-      <div className="page-header">
+      <div>
         <div className="section-meta">VERIFICATION PORTAL</div>
         <h1 className="page-title">{verifyType.charAt(0).toUpperCase() + verifyType.slice(1)} Authenticator</h1>
-        <p className="page-subtitle">Instantly verify the integrity of an academic {verifyType} against blockchain anchors.</p>
+        <p className="page-subtitle">Verify the integrity of an academic {verifyType} against blockchain anchors.</p>
       </div>
 
-      <div className="glass-card" style={{ padding: '8px', display: 'flex', gap: '8px', marginBottom: '32px', maxWidth: '600px' }}>
+      <div style={{ display: 'flex', gap: 4, padding: 4, background: '#FFFFFF', borderRadius: 10, border: '1px solid rgba(57,62,70,0.08)', marginBottom: 28, maxWidth: 500 }}>
         <button
           onClick={() => { setVerifyType("marksheet"); store.resetVerify(); }}
-          className={`btn-premium ${verifyType === "marksheet" ? "btn-solid" : "btn-outline"}`}
-          style={{ flex: 1, padding: '10px' }}
+          className={`btn-premium ${verifyType === "marksheet" ? "btn-solid" : ""}`}
+          style={{ flex: 1, padding: '10px', fontSize: 13 }}
         >
           Marksheet
         </button>
         <button
           onClick={() => { setVerifyType("certificate"); store.resetVerify(); }}
-          className={`btn-premium ${verifyType === "certificate" ? "btn-solid" : "btn-outline"}`}
-          style={{ flex: 1, padding: '10px' }}
+          className={`btn-premium ${verifyType === "certificate" ? "btn-solid" : ""}`}
+          style={{ flex: 1, padding: '10px', fontSize: 13 }}
         >
           Certificate
         </button>
         <button
           onClick={() => { setVerifyType("transcript"); store.resetVerify(); }}
-          className={`btn-premium ${verifyType === "transcript" ? "btn-solid" : "btn-outline"}`}
-          style={{ flex: 1, padding: '10px' }}
+          className={`btn-premium ${verifyType === "transcript" ? "btn-solid" : ""}`}
+          style={{ flex: 1, padding: '10px', fontSize: 13 }}
         >
           Transcript
         </button>
@@ -116,33 +111,33 @@ export default function VerifyPage() {
 
       {store.error && (
         <div className="animate-slide-up" style={{
-          marginBottom: '24px',
-          padding: '16px 20px',
-          borderRadius: 12,
-          background: 'rgba(220, 38, 38, 0.1)',
-          border: '1px solid rgba(220, 38, 38, 0.3)',
+          marginBottom: 20,
+          padding: '12px 16px',
+          borderRadius: 10,
+          background: 'rgba(192, 57, 43, 0.04)',
+          border: '1px solid rgba(192, 57, 43, 0.12)',
           display: 'flex',
           alignItems: 'center',
           gap: 12,
           justifyContent: 'space-between'
         }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-            <div style={{ width: 20, height: 20, borderRadius: '50%', background: '#dc2626', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontSize: 12, fontWeight: 'bold' }}>!</div>
-            <span style={{ color: '#dc2626', fontWeight: 600, fontSize: 14 }}>{store.error}</span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <div style={{ width: 18, height: 18, borderRadius: '50%', background: '#C0392B', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontSize: 10, fontWeight: 'bold' }}>!</div>
+            <span style={{ color: '#C0392B', fontWeight: 500, fontSize: 13 }}>{store.error}</span>
           </div>
           <button
             onClick={() => store.setError(null)}
-            style={{ background: 'none', border: 'none', color: '#dc2626', cursor: 'pointer', fontSize: 18, fontWeight: 'bold', padding: '4px 8px' }}
+            style={{ background: 'none', border: 'none', color: '#C0392B', cursor: 'pointer', fontSize: 16, padding: '2px 6px' }}
           >
-            ×
+            x
           </button>
         </div>
       )}
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: 40, alignItems: 'start' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: 32, alignItems: 'start' }}>
         <div className="space-y-6">
           <section>
-            <div className="section-meta">STEP 01 — DOCUMENT INPUT</div>
+            <div className="section-meta">STEP 01 -- DOCUMENT INPUT</div>
             <FileUploadDropzone
               accept="image/*,.pdf"
               acceptLabel={`${verifyType.charAt(0).toUpperCase() + verifyType.slice(1)} Scan (PNG/PDF)`}
@@ -151,43 +146,43 @@ export default function VerifyPage() {
               onClear={() => store.resetVerify()}
             />
             {store.isValidatingQuality && (
-              <div style={{ marginTop: 16, display: 'flex', alignItems: 'center', gap: 12, justifyContent: 'center' }}>
-                <div style={{ width: 14, height: 14, borderRadius: '50%', background: '#ffc107', animation: 'pulseSoft 1s infinite' }}></div>
-                <span style={{ fontWeight: 600, fontSize: 13, color: '#856404' }}>Analyzing Document Quality...</span>
+              <div style={{ marginTop: 14, display: 'flex', alignItems: 'center', gap: 10, justifyContent: 'center' }}>
+                <div style={{ width: 10, height: 10, borderRadius: '50%', background: '#B8860B', animation: 'pulseSoft 1s infinite' }}></div>
+                <span style={{ fontWeight: 500, fontSize: 13, color: '#B8860B' }}>Analyzing Document Quality...</span>
               </div>
             )}
             {store.isProcessingOCR && (
-              <div style={{ marginTop: 16, display: 'flex', alignItems: 'center', gap: 12, justifyContent: 'center' }}>
-                <div style={{ width: 14, height: 14, borderRadius: '50%', background: '#609966', animation: 'pulseSoft 1s infinite' }}></div>
-                <span style={{ fontWeight: 600, fontSize: 13 }}>Extracting Data Points...</span>
+              <div style={{ marginTop: 14, display: 'flex', alignItems: 'center', gap: 10, justifyContent: 'center' }}>
+                <div style={{ width: 10, height: 10, borderRadius: '50%', background: '#393E46', animation: 'pulseSoft 1s infinite' }}></div>
+                <span style={{ fontWeight: 500, fontSize: 13, color: '#393E46' }}>Extracting Data Points...</span>
               </div>
             )}
             {store.qualityResult && (
               <div 
                 className="animate-slide-up"
                 style={{ 
-                  marginTop: 16, 
-                  padding: '12px 16px', 
-                  borderRadius: 12, 
-                  background: store.qualityResult.is_valid ? 'rgba(96,153,102,0.1)' : 'rgba(255,193,7,0.1)',
-                  border: `1px solid ${store.qualityResult.is_valid ? 'rgba(96,153,102,0.2)' : 'rgba(255,193,7,0.2)'}`,
+                  marginTop: 14, 
+                  padding: '10px 14px', 
+                  borderRadius: 8, 
+                  background: store.qualityResult.is_valid ? 'rgba(45,106,79,0.04)' : 'rgba(184,134,11,0.04)',
+                  border: `1px solid ${store.qualityResult.is_valid ? 'rgba(45,106,79,0.12)' : 'rgba(184,134,11,0.12)'}`,
                   display: 'flex',
                   alignItems: 'center',
-                  gap: 12
+                  gap: 10
                 }}
               >
                 <div style={{ 
-                  width: 8, 
-                  height: 8, 
+                  width: 6, 
+                  height: 6, 
                   borderRadius: '50%', 
-                  background: store.qualityResult.is_valid ? '#609966' : '#ffc107' 
+                  background: store.qualityResult.is_valid ? '#2D6A4F' : '#B8860B' 
                 }}></div>
                 <div style={{ flex: 1 }}>
-                  <p style={{ fontSize: 12, fontWeight: 800, margin: 0, color: store.qualityResult.is_valid ? '#609966' : '#856404' }}>
+                  <p style={{ fontSize: 11, fontWeight: 700, margin: 0, color: store.qualityResult.is_valid ? '#2D6A4F' : '#B8860B' }}>
                     QUALITY: {store.qualityResult.is_valid ? 'CERTIFIED HIGH' : 'LOW QUALITY WARNING'}
                   </p>
                   {store.qualityResult.message && (
-                    <p style={{ fontSize: 11, margin: 0, opacity: 0.7 }}>{store.qualityResult.message}</p>
+                    <p style={{ fontSize: 11, margin: 0, color: '#929AAB' }}>{store.qualityResult.message}</p>
                   )}
                 </div>
               </div>
@@ -196,13 +191,13 @@ export default function VerifyPage() {
 
           {store.ocrResult && (
             <section className="animate-slide-up">
-              <div className="section-meta">STEP 02 — DATA SYNTHESIS</div>
+              <div className="section-meta">STEP 02 -- DATA SYNTHESIS</div>
               <OCRResultCard result={store.ocrResult} type={verifyType} />
               
-              <div className="root-emphasized" style={{ marginTop: 24, padding: 24, background: '#40513B' }}>
-                <p className="root-label" style={{ marginBottom: 10 }}><FaTerminal /> GENERATED DOCUMENT HASH</p>
+              <div className="root-emphasized" style={{ marginTop: 20 }}>
+                <p className="root-label"><FaTerminal /> GENERATED DOCUMENT HASH</p>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 12, justifyContent: 'center' }}>
-                  <p className="root-value" style={{ fontSize: 13, flex: 1, textAlign: 'left' }}>{store.verifyHash}</p>
+                  <p className="root-value" style={{ fontSize: 12, flex: 1, textAlign: 'left' }}>{store.verifyHash}</p>
                   <CopyButton text={store.verifyHash} />
                 </div>
               </div>
@@ -211,8 +206,8 @@ export default function VerifyPage() {
 
           {store.verifyHash && !store.verifyResult && (
             <section>
-              <div className="section-meta">STEP 03 — ANCHOR CROSS-CHECK</div>
-              <button onClick={handleVerify} className="btn-premium btn-solid btn-block" disabled={store.isVerifying}>
+              <div className="section-meta">STEP 03 -- ANCHOR CROSS-CHECK</div>
+              <button onClick={handleVerify} className="btn-premium btn-solid btn-block" disabled={store.isVerifying} style={{ padding: 14 }}>
                 <FaShieldAlt /> {store.isVerifying ? "Contacting Ethereum Nodes..." : "Perform Blockchain Verification"}
               </button>
             </section>
@@ -229,11 +224,11 @@ export default function VerifyPage() {
         <div>
           <ActivityLog entries={store.activityLog} />
           
-          <div className="glass-card" style={{ marginTop: 32 }}>
-            <h3 style={{ marginBottom: 12, display: 'flex', alignItems: 'center', gap: 10 }}>
+          <div className="glass-card" style={{ marginTop: 24 }}>
+            <h3 style={{ marginBottom: 12, fontSize: 14, fontWeight: 700 }}>
                Verification Guide
             </h3>
-            <ul style={{ fontSize: 13, opacity: 0.7, paddingLeft: 16, lineHeight: 1.8 }}>
+            <ul style={{ fontSize: 13, color: '#929AAB', paddingLeft: 16, lineHeight: 1.9 }}>
               <li>Ensure the scan is clear and well-lit.</li>
               <li>Hash is calculated from {verifyType === "transcript" ? "the full academic history" : "Reg No, GPA, and Credits"}.</li>
               <li>Verification checks if this hash exists in any anchored Merkle Tree.</li>
