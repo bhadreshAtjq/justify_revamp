@@ -1,62 +1,85 @@
 import { NextResponse } from "next/server";
 
-const BASE_URL = "https://final-ocr.onrender.com";
+// Get OCR server URLs from environment variables
+const OCR_SERVERS = [
+  process.env.BASE_URL,
+  process.env.BASE_URL_1,
+  process.env.BASE_URL_2,
+  process.env.BASE_URL_3
+].filter(Boolean).map(url => url!.trim().replace(/['"]/g, "")) as string[];
 
 export async function POST(req: Request) {
   try {
     const formData = await req.formData();
     const file = formData.get("file");
     const type = formData.get("type") || "marksheet";
-    //this is in the form-data form as the file 
 
     if (!file) {
       return NextResponse.json({ error: "No file provided" }, { status: 400 });
     }
-
-    let OCR_SERVER_URL = `${BASE_URL}/api/v1/marksheet_data_extraction`;
-    if (type === "certificate") OCR_SERVER_URL = `${BASE_URL}/api/v1/certificate`;
-    if (type === "transcript") OCR_SERVER_URL = `${BASE_URL}/api/v1/transcript`;
 
     // Ensure the file is correctly forwarded as a Blob to the Python server
     const bytes = await (file as any).arrayBuffer();
     const contentType = (file as any).type;
     const fileName = (file as any).name;
 
-    const ocrFormData = new FormData();
-    ocrFormData.append("file", new Blob([bytes], { type: contentType }), fileName);
+    let lastError: any = null;
 
-    const response = await fetch(OCR_SERVER_URL, {
-      method: "POST",
-      body: ocrFormData,
-    }).catch(err => {
-      console.error("Fetch to OCR server failed:", err);
-      return null;
-    });
+    // Loop through available OCR servers for failover
+    for (const baseUrl of OCR_SERVERS) {
+      // Remove trailing slash if present to avoid double slashes
+      const sanitizedBaseUrl = baseUrl.replace(/\/$/, "");
+      
+      let OCR_SERVER_URL = `${sanitizedBaseUrl}/api/v1/marksheet_data_extraction`;
+      if (type === "certificate") OCR_SERVER_URL = `${sanitizedBaseUrl}/api/v1/certificate`;
+      if (type === "transcript") OCR_SERVER_URL = `${sanitizedBaseUrl}/api/v1/transcript`;
 
-    if (!response || !response.ok) {
-      const errorText = response ? await response.text() : "No response from Render";
-      console.error("OCR Server Error:", errorText);
+      console.log(`Attempting OCR with server: ${OCR_SERVER_URL}`);
 
-      // Parse error message from OCR server if available
-      let errorMessage = "OCR Service Unavailable";
       try {
-        const errorJson = JSON.parse(errorText);
+        const ocrFormData = new FormData();
+        ocrFormData.append("file", new Blob([bytes], { type: contentType }), fileName);
+
+        const response = await fetch(OCR_SERVER_URL, {
+          method: "POST",
+          body: ocrFormData,
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          console.log(`OCR Success with server: ${sanitizedBaseUrl}`);
+          return NextResponse.json(data);
+        } else {
+          const errorText = await response.text();
+          console.error(`OCR Server ${sanitizedBaseUrl} returned error:`, errorText);
+          lastError = errorText;
+          // Continue to next server
+        }
+      } catch (err: any) {
+        console.error(`Failed to reach OCR server ${sanitizedBaseUrl}:`, err.message);
+        lastError = err.message;
+        // Continue to next server
+      }
+    }
+
+    // If we reach here, all servers failed
+    let errorMessage = "All OCR Services Unavailable";
+    if (lastError) {
+      try {
+        const errorJson = JSON.parse(lastError);
         if (errorJson.detail) {
           errorMessage = errorJson.detail;
         }
       } catch {
-        // If not JSON, use raw error text
-        if (errorText && errorText !== "No response from Render") {
-          errorMessage = errorText;
-        }
+        errorMessage = lastError;
       }
-
-      return NextResponse.json({ error: errorMessage }, { status: 400 });
     }
 
-    const data = await response.json();
-    console.log("OCR Response Data:", JSON.stringify(data, null, 2));
-    return NextResponse.json(data);
+    return NextResponse.json({ 
+      error: "OCR extraction failed on all available servers", 
+      details: errorMessage 
+    }, { status: 502 });
+
   } catch (error: any) {
     console.error("OCR API Route Error:", error);
     return NextResponse.json(
@@ -65,3 +88,4 @@ export async function POST(req: Request) {
     );
   }
 }
+
