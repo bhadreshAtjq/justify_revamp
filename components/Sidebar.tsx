@@ -2,10 +2,11 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { FaColumns, FaShieldAlt, FaFlask } from "react-icons/fa";
+import { FaColumns, FaShieldAlt, FaFlask, FaLayerGroup } from "react-icons/fa";
 
 const navItems = [
   { href: "/dashboard", label: "Dashboard", icon: FaColumns },
+  { href: "/bulk-ocr", label: "Bulk OCR Ingestion", icon: FaLayerGroup },
   { href: "/verify", label: "Verify", icon: FaShieldAlt },
   { href: "/sandbox", label: "Merkle Sandbox", icon: FaFlask },
 ];

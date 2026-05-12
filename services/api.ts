@@ -36,6 +36,22 @@ export interface QualityResponse {
   message?: string;
 }
 
+export interface BulkProcessingResult {
+  filename: string;
+  doc_type: string;
+  status: string;
+  data?: any;
+  error?: string;
+  ledger_hash?: string;
+}
+
+export interface BulkProcessingResponse {
+  total_files: number;
+  processed_files: number;
+  failed_files: number;
+  results: BulkProcessingResult[];
+}
+
 export interface VerifyResponse {
   hash: string;
   onChain: {
@@ -98,6 +114,27 @@ export async function processOCR(file: File, type: string = "marksheet"): Promis
 
   const data = await response.json();
   return data as OCRResponse;
+}
+
+/**
+ * Process bulk documents from a ZIP file.
+ */
+export async function processBulkOCR(file: File): Promise<BulkProcessingResponse> {
+  const formData = new FormData();
+  formData.append("file", file);
+  formData.append("type", "bulk");
+
+  const response = await fetch(`/api/ocr`, {
+    method: "POST",
+    body: formData,
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text().catch(() => "Unknown error");
+    throw new Error(`Bulk OCR failed: ${errorText}`);
+  }
+
+  return await response.json();
 }
 
 /**

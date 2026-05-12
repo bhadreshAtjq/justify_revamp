@@ -321,6 +321,15 @@ body {
   color: var(--accent);
 }
 
+.badge-premium {
+  padding: 4px 12px;
+  border-radius: 6px;
+  font-size: 10px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
 /* Dropzone */
 .dropzone-premium {
   background-color: var(--surface);
@@ -384,6 +393,15 @@ body {
   flex: 1;
 }
 
+.animate-spin {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
 /* Animations */
 @keyframes slideUp {
   from { opacity: 0; transform: translateY(20px); }
@@ -406,6 +424,12 @@ body {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 24px;
+}
+
+.grid-cols-3 {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 16px;
 }
 
 /* Dashboard Specific Root Display */

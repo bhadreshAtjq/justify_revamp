@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 
-const BASE_URL = "https://final-ocr.onrender.com";
+const BASE_URL = process.env.OCR_BACKEND_URL || "http://localhost:8000";
 
 export async function POST(req: Request) {
   try {
@@ -16,6 +16,7 @@ export async function POST(req: Request) {
     let OCR_SERVER_URL = `${BASE_URL}/api/v1/marksheet_data_extraction`;
     if (type === "certificate") OCR_SERVER_URL = `${BASE_URL}/api/v1/certificate`;
     if (type === "transcript") OCR_SERVER_URL = `${BASE_URL}/api/v1/transcript`;
+    if (type === "bulk") OCR_SERVER_URL = `${BASE_URL}/api/v1/bulk_process_zip`;
 
     // Ensure the file is correctly forwarded as a Blob to the Python server
     const bytes = await (file as any).arrayBuffer();
