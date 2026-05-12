@@ -2,8 +2,14 @@
 
 import { useState, useCallback, useMemo } from "react";
 import { processBulkOCR, BulkProcessingResponse, BulkProcessingResult, anchorRoot } from "@/services/api";
+import { generateHashesFromRecords } from "@/lib/hash";
+import { buildMerkleTree } from "@/lib/merkle";
 import FileUploadDropzone from "@/components/FileUploadDropzone";
 import ActivityLog from "@/components/ActivityLog";
+import HashGeneratorPanel from "@/components/HashGeneratorPanel";
+import MerkleTreePanel from "@/components/MerkleTreePanel";
+import BlockchainStatusCard from "@/components/BlockchainStatusCard";
+import AnchorChecklist from "@/components/AnchorChecklist";
 import { 
   FaLayerGroup, 
   FaCheckCircle, 
@@ -16,7 +22,9 @@ import {
   FaTimes,
   FaDatabase,
   FaLink,
-  FaCheck
+  FaCheck,
+  FaRocket,
+  FaDownload
 } from "react-icons/fa";
 import { useAppStore } from "@/store/useAppStore";
 
@@ -31,6 +39,12 @@ export default function BulkOCRPage() {
   const [uploadType, setUploadType] = useState<"marksheet" | "certificate" | "transcript">("marksheet");
   const [anchoringId, setAnchoringId] = useState<string | null>(null);
   const [anchoredHashes, setAnchoredHashes] = useState<Set<string>>(new Set());
+  const [isGeneratingHashes, setIsGeneratingHashes] = useState(false);
+  const [isGeneratingMerkle, setIsGeneratingMerkle] = useState(false);
+  const [isAnchoringRoot, setIsAnchoringRoot] = useState(false);
+  const [merkleRoot, setMerkleRoot] = useState<string>("");
+  const [merkleLeaves, setMerkleLeaves] = useState<string[]>([]);
+  const [anchorResult, setAnchorResult] = useState<any>(null);
   const pageSize = 10;
 
   const handleBulkUpload = useCallback(async (file: File) => {
@@ -86,12 +100,80 @@ export default function BulkOCRPage() {
     }
   };
 
+  const handleGenerateHashes = useCallback(() => {
+    store.setError(null);
+    setIsGeneratingHashes(true);
+    try {
+      // Get current table data from results
+      const currentTableData = results ? results.results
+        .filter(res => res.status === 'success' && res.data)
+        .map(res => ({
+          ...res.data,
+          __filename: res.filename,
+          __doc_type: res.doc_type,
+          __ledger_hash: res.ledger_hash
+        })) : [];
+      
+      const hashes = generateHashesFromRecords(currentTableData, store.hashConfig, uploadType);
+      store.setHashes(hashes);
+      store.addActivityLog("hashes_generated", `Proofs generated using strategy: [${Object.entries(store.hashConfig).filter(([_, v]) => v).map(([k]) => k.replace('include', '')).join(', ')}]`);
+    } catch (err) {
+      store.setError(err instanceof Error ? err.message : "Hashing failed");
+    } finally {
+      setIsGeneratingHashes(false);
+    }
+  }, [results, store, uploadType]);
+
+  const handleGenerateMerkle = useCallback(() => {
+    store.setError(null);
+    setIsGeneratingMerkle(true);
+    try {
+      const { root, leaves } = buildMerkleTree(store.hashes.map((h) => h.hash));
+      setMerkleRoot(root);
+      setMerkleLeaves(leaves);
+      store.setMerkleData(root, leaves);
+      store.addActivityLog("root_generated", `Merkle Root fixed: ${root.slice(0, 12)}...`);
+    } catch (err) {
+      store.setError(err instanceof Error ? err.message : "Merkle build failed");
+    } finally {
+      setIsGeneratingMerkle(false);
+    }
+  }, [store]);
+
+  const handleAnchorRoot = useCallback(async () => {
+    if (!store.university.trim()) {
+      store.setError("Institutional ID required to anchor root.");
+      return;
+    }
+    store.setError(null);
+    setIsAnchoringRoot(true);
+    try {
+      const result = await anchorRoot(
+        merkleRoot,
+        store.university,
+        store.year,
+        merkleLeaves
+      );
+      setAnchorResult(result);
+      store.setAnchorResult(result);
+      store.addActivityLog("anchored", `Root successfully anchored on chain (Block: ${result.blockNumber})`);
+    } catch (err) {
+      store.setError(err instanceof Error ? err.message : "Anchoring failed");
+    } finally {
+      setIsAnchoringRoot(false);
+    }
+  }, [merkleRoot, merkleLeaves, store]);
+
   const clearResults = () => {
     setZipFile(null);
     setResults(null);
     setViewingData(null);
     store.setError(null);
     setAnchoredHashes(new Set());
+    setMerkleRoot("");
+    setMerkleLeaves([]);
+    setAnchorResult(null);
+    store.resetDashboard();
   };
 
   // Extract successful records for the table
@@ -282,6 +364,78 @@ export default function BulkOCRPage() {
                   <button className="page-btn" onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))} disabled={currentPage === totalPages || totalPages === 0}><FaChevronRight /></button>
                 </div>
               </div>
+            </section>
+          )}
+
+          {results && results.processed_files > 0 && (
+            <section>
+              <div className="section-meta">STEP 03 — DEFINE ANCHOR ATTRIBUTES</div>
+              <AnchorChecklist />
+            </section>
+          )}
+
+          {results && results.processed_files > 0 && (
+            <section>
+              <div className="section-meta">STEP 04 — CRYPTOGRAPHIC WORKFLOW</div>
+              <HashGeneratorPanel
+                hashes={store.hashes}
+                isGenerating={isGeneratingHashes}
+                onGenerate={handleGenerateHashes}
+                canGenerate={true}
+              />
+              {store.hashes.length > 0 && (
+                <div style={{ marginTop: 24 }}>
+                  <MerkleTreePanel
+                    merkleRoot={merkleRoot}
+                    leaves={merkleLeaves}
+                    isGenerating={isGeneratingMerkle}
+                    onGenerate={handleGenerateMerkle}
+                    canGenerate={true}
+                  />
+                </div>
+              )}
+            </section>
+          )}
+
+          {merkleRoot && (
+            <section>
+              <div className="section-meta">STEP 05 — BLOCKCHAIN FINALIZATION</div>
+              {!anchorResult ? (
+                <div className="glass-card">
+                  <div className="grid-cols-2" style={{ marginBottom: 24 }}>
+                    <div>
+                      <label className="section-meta" style={{ fontSize: 10 }}>University ID</label>
+                      <input
+                        className="inner-card"
+                        style={{ width: '100%', border: 'none', padding: 16, fontSize: 14 }}
+                        placeholder="e.g. Stanford University"
+                        value={store.university}
+                        onChange={(e) => store.setUniversity(e.target.value)}
+                      />
+                    </div>
+                    <div>
+                      <label className="section-meta" style={{ fontSize: 10 }}>Academic Year</label>
+                      <input
+                        className="inner-card"
+                        style={{ width: '100%', border: 'none', padding: 16, fontSize: 14 }}
+                        placeholder="2026"
+                        value={store.year}
+                        onChange={(e) => store.setYear(e.target.value)}
+                      />
+                    </div>
+                  </div>
+                  <button onClick={handleAnchorRoot} className="btn-premium btn-solid btn-block" disabled={isAnchoringRoot}>
+                    <FaRocket /> {isAnchoringRoot ? "Broadcasting..." : "Anchor Root to Mainnet"}
+                  </button>
+                </div>
+              ) : (
+                <>
+                  <BlockchainStatusCard result={anchorResult} />
+                  <button className="btn-premium btn-dark btn-block" style={{ marginTop: 24 }}>
+                    <FaDownload /> Bulk OCR Session Proof (JSON)
+                  </button>
+                </>
+              )}
             </section>
           )}
         </div>

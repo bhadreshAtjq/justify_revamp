@@ -3,7 +3,7 @@ import type { AnchorResponse, OCRResponse, VerifyResponse } from "@/services/api
 
 export interface ActivityLogEntry {
   id: string;
-  type: "csv_uploaded" | "hashes_generated" | "root_generated" | "anchored" | "ocr_complete" | "verified" | "quality_validated";
+  type: "csv_uploaded" | "hashes_generated" | "root_generated" | "anchored" | "ocr_complete" | "verified" | "quality_validated" | "bulk_ocr_started" | "bulk_ocr_finished" | "bulk_ocr_error" | "anchoring_started" | "anchor_error";
   message: string;
   timestamp: Date;
 }

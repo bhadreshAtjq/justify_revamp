@@ -71,6 +71,21 @@ export interface VerifyResponse {
   };
 }
 
+export interface BulkProcessingResult {
+  filename: string;
+  doc_type: string;
+  status: string;
+  data?: any;
+  ledger_hash?: string;
+  error?: string;
+}
+
+export interface BulkProcessingResponse {
+  processed_files: number;
+  failed_files: number;
+  results: BulkProcessingResult[];
+}
+
 /**
  * Anchor a Merkle root on the blockchain
  */
@@ -214,4 +229,5 @@ export async function fetchRecordsFromDB(): Promise<any[]> {
   if (!response.ok) throw new Error("Fetch failed");
   return await response.json();
 }
+
 
