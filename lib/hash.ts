@@ -79,7 +79,8 @@ export function generateHashesFromRecords(
       record["no"] ||
       `UNNAMED_${index}`;
 
-    const hash = generateStudentHash(record, strategy, type);
+    // Use pre-calculated ledger hash from backend if available for 100% parity
+    const hash = record.__ledger_hash || record.ledger_hash || generateStudentHash(record, strategy, type);
 
     return {
       hash,

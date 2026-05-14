@@ -33,17 +33,19 @@ export function mapTranscriptPayload(data: any): any {
 
   // If the data is already structured properly from the OCR JSON response,
   // we MUST mathematically reconstruct it key-by-key to force deterministic ordering for the hashing engine.
-  if (data.years && Array.isArray(data.years) && data.years.length > 0) {
+  if ((data.years && Array.isArray(data.years) && data.years.length > 0) || (data.courses && Array.isArray(data.courses))) {
     return {
       registration_no: findVal(["registration_no", "Registration_No", "reg_no", "Reg No", "registration number"]),
       name: findVal(["name", "Student_Name", "student_name", "Student Name", "full_name"]),
       degree: findVal(["degree", "Degree", "program", "course"]),
+      major: findVal(["major", "subject", "branch", "Major"]),
+      thesis_title: findVal(["thesis_title", "title of thesis", "thesis", "research_title"]),
       admission_year: findVal(["admission_year", "Admission_Year", "admission", "session"]),
       completion_year: findVal(["completion_year", "Completion_Year", "passing_year", "year"]),
       ogpa: String(findVal(["ogpa", "OGPA", "Overall_GPA", "overall_gpa", "cgpa", "CGPA"]) || "0.00"),
       result: String(findVal(["result", "Result", "status"]) || "Pass"),
       class_division: String(findVal(["class_division", "class_division", "Class", "division"]) || ""),
-      years: data.years.map((y: any) => ({
+      years: (data.years || []).map((y: any) => ({
         year: String(y.year || ""),
         semesters: (y.semesters || []).map((s: any) => ({
           semester: String(s.semester || s.name || ""),
@@ -55,6 +57,11 @@ export function mapTranscriptPayload(data: any): any {
             credit_points: cleanCreditPoints(c.credit_points || c.credits || c.Credit_Points || "")
           }))
         }))
+      })),
+      courses: (data.courses || []).map((c: any) => ({
+        course_number: String(c.course_number || c.code || c.Course_Number || ""),
+        title: String(c.title || c.name || c.Course_Name || ""),
+        credit_points: cleanCreditPoints(c.credit_points || c.credits || c.Credit_Points || "")
       }))
     };
   }

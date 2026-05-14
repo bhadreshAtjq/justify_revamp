@@ -20,42 +20,51 @@ export default function TranscriptTemplate({ data, id = "transcript-pdf" }: { da
 
     // Calculate total estimated rows for the entire transcript
     let totalRows = 0;
-    transcript.years.forEach((year: any) => {
-      totalRows += 1; // Year Name
-      (year.semesters || []).forEach((sem: any) => {
-        totalRows += 2 + (sem.courses || []).length; // Sem Name + Footer + Course Rows
+    if (transcript.years && transcript.years.length > 0) {
+      transcript.years.forEach((year: any) => {
+        totalRows += 1; // Year Name
+        (year.semesters || []).forEach((sem: any) => {
+          totalRows += 2 + (sem.courses || []).length; // Sem Name + Footer + Course Rows
+        });
       });
-    });
+    } else if (transcript.courses && transcript.courses.length > 0) {
+      totalRows = transcript.courses.length + 5; // Course list + padding
+    }
 
     // Determine the max allowed rows over 3 pages
     const TOTAL_CAPACITY = MAX_ROWS_FIRST_PAGE + (2 * MAX_ROWS_SUBSEQUENT);
-
-    // If we exceed capacity, calculate how much we need to "squeeze" rows per page
-    // to force everything into 3 pages.
     const squeezeRatio = totalRows > TOTAL_CAPACITY ? totalRows / TOTAL_CAPACITY : 1;
     
     const p1Limit = Math.ceil(MAX_ROWS_FIRST_PAGE * squeezeRatio);
     const pSubLimit = Math.ceil(MAX_ROWS_SUBSEQUENT * squeezeRatio);
 
-    transcript.years.forEach((year: any) => {
-      let yearRows = 1; 
-      (year.semesters || []).forEach((sem: any) => {
-        yearRows += 2 + (sem.courses || []).length;
+    if (transcript.years && transcript.years.length > 0) {
+      transcript.years.forEach((year: any) => {
+        let yearRows = 1; 
+        (year.semesters || []).forEach((sem: any) => {
+          yearRows += 2 + (sem.courses || []).length;
+        });
+
+        const limit = (result.length === 0) ? p1Limit : pSubLimit;
+        if (result.length < 2 && currentRows + yearRows > limit && currentPage.length > 0) {
+          result.push(currentPage);
+          currentPage = [year];
+          currentRows = yearRows;
+        } else {
+          currentPage.push(year);
+          currentRows += yearRows;
+        }
       });
-
-      const limit = (result.length === 0) ? p1Limit : pSubLimit;
-
-      // Logic: If adding this year exceeds the dynamic limit, start a new page
-      // EXCEPT: if we are already on Page 2, Page 3 MUST take everything else.
-      if (result.length < 2 && currentRows + yearRows > limit && currentPage.length > 0) {
-        result.push(currentPage);
-        currentPage = [year];
-        currentRows = yearRows;
-      } else {
-        currentPage.push(year);
-        currentRows += yearRows;
+    } else if (transcript.courses && transcript.courses.length > 0) {
+      // Split flat courses list into pages
+      let remainingCourses = [...transcript.courses];
+      while (remainingCourses.length > 0) {
+        const limit = (result.length === 0) ? p1Limit : pSubLimit;
+        const take = Math.min(remainingCourses.length, limit);
+        result.push(remainingCourses.splice(0, take));
       }
-    });
+      return result; // Early return for flat list
+    }
 
     if (currentPage.length > 0) result.push(currentPage);
     return result;
@@ -67,7 +76,7 @@ export default function TranscriptTemplate({ data, id = "transcript-pdf" }: { da
 
   const leafHash = data.merkle_leaf || data.keccak256_hash || "PENDING_ANCHOR";
 
-  const renderPage = (years: any[], pageNum: number, isLastPage: boolean) => (
+  const renderPage = (items: any[], pageNum: number, isLastPage: boolean) => (
     <div className="transcript-page" key={pageNum} style={{ pageBreakAfter: isLastPage ? 'auto' : 'always' }}>
       {pageNum === 1 && (
         <>
@@ -102,6 +111,16 @@ export default function TranscriptTemplate({ data, id = "transcript-pdf" }: { da
                 <td></td>
                 <td className="label">Completion Year</td><td className="sep">:</td><td className="val">{transcript.completion_year}</td>
               </tr>
+              {transcript.major && (
+                <tr>
+                  <td className="label">Major Subject</td><td className="sep">:</td><td className="val" colSpan={4}>{transcript.major}</td>
+                </tr>
+              )}
+              {transcript.thesis_title && (
+                <tr>
+                  <td className="label">Thesis Title</td><td className="sep">:</td><td className="val" colSpan={4} style={{ fontSize: '11px', fontStyle: 'italic' }}>"{transcript.thesis_title}"</td>
+                </tr>
+              )}
             </tbody>
           </table>
         </>
@@ -122,7 +141,8 @@ export default function TranscriptTemplate({ data, id = "transcript-pdf" }: { da
           </tr>
         </thead>
         <tbody>
-          {years.map((yearObj: any, yIdx: number) => (
+          {/* Handle Nested Years/Semesters */}
+          {transcript.years && transcript.years.length > 0 && items.map((yearObj: any, yIdx: number) => (
             <React.Fragment key={yIdx}>
               {yearObj.semesters.map((semObj: any, sIdx: number) => (
                 <React.Fragment key={`${yIdx}-${sIdx}`}>
@@ -139,7 +159,7 @@ export default function TranscriptTemplate({ data, id = "transcript-pdf" }: { da
                   ))}
                   <tr className="sem-footer-row">
                     <td></td>
-                    <td colSpan={2} style={{ borderTop: '2.5px solid #000', padding: '5px' }}>
+                    <td colSpan={2} style={{ borderTop: '1.5px solid #000', padding: '5px' }}>
                       <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '25px' }}>
                         <span>G.P.A. : {semObj.gpa}</span>
                         <span>C.G.P.A. : {semObj.cgpa}</span>
@@ -150,12 +170,21 @@ export default function TranscriptTemplate({ data, id = "transcript-pdf" }: { da
               ))}
             </React.Fragment>
           ))}
+
+          {/* Handle Flat Course List (Consolidated/PG) */}
+          {(!transcript.years || transcript.years.length === 0) && items.map((course: any, cIdx: number) => (
+            <tr key={cIdx} className="course-row">
+              <td>{course.course_number}</td>
+              <td style={{ textAlign: 'left' }}>{course.title}</td>
+              <td style={{ textAlign: 'center' }}>{course.credit_points}</td>
+            </tr>
+          ))}
         </tbody>
       </table>
 
       {isLastPage && (
         <>
-          <div style={{ marginTop: '12px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1.5px solid #000', paddingTop: '8px' }}>
+          <div style={{ marginTop: '12px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid #000', paddingTop: '8px' }}>
             <div style={{ fontSize: '12px' }}>
               <div><strong>Result:</strong> {transcript.result || "Pass"}</div>
               <div style={{ marginTop: '2px' }}><strong>Class / Division:</strong> {transcript.class_division || "First Class"}</div>
@@ -222,6 +251,8 @@ export default function TranscriptTemplate({ data, id = "transcript-pdf" }: { da
           }
           .transcript-main-table th { background-color: #f0f0f0 !important; }
           .sem-header-row { background-color: #fdfdfd !important; }
+          .transcript-main-table, .transcript-main-table th, .transcript-main-table td { border-width: 0.5px !important; border-color: #000 !important; }
+          .sem-footer-row td { border-top-width: 1px !important; }
           tr { page-break-inside: avoid !important; }
         }
         .transcript-header {
@@ -294,13 +325,14 @@ export default function TranscriptTemplate({ data, id = "transcript-pdf" }: { da
         .transcript-main-table {
           width: 100%;
           border-collapse: collapse;
-          border: 1.5px solid #000;
+          border: 0.8px solid #000;
         }
         .transcript-main-table th, .transcript-main-table td {
-          border: 1px solid #000;
-          padding: 4px 6px;
+          border: 0.5px solid #000;
+          padding: 8px 6px;
           font-size: 12.5px;
-          line-height: 1.3;
+          line-height: 1.5;
+          vertical-align: middle;
         }
         .transcript-main-table th {
           background: #f0f0f0;
@@ -316,8 +348,11 @@ export default function TranscriptTemplate({ data, id = "transcript-pdf" }: { da
           text-align: right;
         }
         .course-row td {
-          padding: 3px 6px;
+          padding: 6px 8px;
           font-size: 13px;
+        }
+        .sem-header-row td {
+          padding: 10px 8px !important;
         }
 
         .verification-footer {

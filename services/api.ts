@@ -36,6 +36,23 @@ export interface QualityResponse {
   message?: string;
 }
 
+export interface BulkProcessingResult {
+  filename: string;
+  doc_type: string;
+  status: string;
+  data?: any;
+  raw_text?: string;
+  ledger_hash?: string;
+  error?: string;
+}
+
+export interface BulkProcessingResponse {
+  total_files: number;
+  processed_files: number;
+  failed_files: number;
+  results: BulkProcessingResult[];
+}
+
 export interface VerifyResponse {
   hash: string;
   onChain: {
@@ -79,6 +96,17 @@ export async function anchorRoot(
 }
 
 /**
+ * Log Merkle Root construction to the backend terminal
+ */
+export async function logMerkle(root: string, leavesCount: number): Promise<void> {
+  await fetch(`/api/log-merkle`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ root, leaves_count: leavesCount }),
+  });
+}
+
+/**
  * Process document image/PDF through OCR based on document type.
  */
 export async function processOCR(file: File, type: string = "marksheet"): Promise<OCRResponse> {
@@ -98,6 +126,27 @@ export async function processOCR(file: File, type: string = "marksheet"): Promis
 
   const data = await response.json();
   return data as OCRResponse;
+}
+
+/**
+ * Process bulk documents from a ZIP file.
+ */
+export async function processBulkOCR(file: File): Promise<Response> {
+  const formData = new FormData();
+  formData.append("file", file);
+  formData.append("type", "bulk");
+
+  const response = await fetch(`/api/ocr`, {
+    method: "POST",
+    body: formData,
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text().catch(() => "Unknown error");
+    throw new Error(`Bulk OCR failed: ${errorText}`);
+  }
+
+  return response;
 }
 
 /**

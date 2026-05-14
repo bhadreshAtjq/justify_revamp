@@ -31,26 +31,24 @@ export async function POST(req: Request) {
     }
 
     // 0. Check for existing anchored root
-    const existing = await (prisma as any).merkleAnchor.findUnique({
+    let anchor = await (prisma as any).merkleAnchor.findUnique({
       where: { merkleRoot }
     });
 
-    if (existing && existing.status === "confirmed") {
-      return NextResponse.json({ 
-        error: "Merkle Root already anchored", 
-        details: `This batch was already submitted on ${new Date(existing.createdAt).toLocaleDateString()}`,
-        txHash: existing.txHash 
-      }, { status: 409 });
+    let blockchainResult: any = null;
+
+    if (anchor && anchor.status === "confirmed") {
+      console.log("Merkle Root already anchored, skipping blockchain call but updating links.");
+      blockchainResult = { txHash: anchor.txHash, blockNumber: "already_confirmed" };
+    } else {
+      // 1. Anchor to Blockchain
+      blockchainResult = await anchorMerkleRoot(merkleRoot);
     }
-
-
-    // 1. Anchor to Blockchain
-    const blockchainResult = await anchorMerkleRoot(merkleRoot);
 
     const institutionId = session?.user?.institutionId;
 
-    // 2. Log to Database
-    const anchor = await (prisma as any).merkleAnchor.upsert({
+    // 2. Log/Update Database
+    anchor = await (prisma as any).merkleAnchor.upsert({
       where: { merkleRoot },
       update: {
         txHash: blockchainResult.txHash,

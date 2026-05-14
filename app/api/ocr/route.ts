@@ -2,11 +2,14 @@ import { NextResponse } from "next/server";
 
 // Get OCR server URLs from environment variables
 const OCR_SERVERS = [
+  process.env.OCR_BACKEND_URL,
   process.env.BASE_URL,
   process.env.BASE_URL_1,
   process.env.BASE_URL_2,
   process.env.BASE_URL_3
 ].filter(Boolean).map(url => url!.trim().replace(/['"]/g, "")) as string[];
+
+export const maxDuration = 300; // Allow up to 5 minutes for large PDF processing
 
 export async function POST(req: Request) {
   try {
@@ -33,6 +36,7 @@ export async function POST(req: Request) {
       let OCR_SERVER_URL = `${sanitizedBaseUrl}/api/v1/marksheet_data_extraction`;
       if (type === "certificate") OCR_SERVER_URL = `${sanitizedBaseUrl}/api/v1/certificate`;
       if (type === "transcript") OCR_SERVER_URL = `${sanitizedBaseUrl}/api/v1/transcript`;
+      if (type === "bulk") OCR_SERVER_URL = `${sanitizedBaseUrl}/api/v1/bulk_process_zip`;
 
       console.log(`Attempting OCR with server: ${OCR_SERVER_URL}`);
 
@@ -46,6 +50,17 @@ export async function POST(req: Request) {
         });
 
         if (response.ok) {
+          // Handle Streaming for Bulk Processing
+          if (type === "bulk") {
+            console.log(`Bulk OCR Success with server: ${sanitizedBaseUrl}`);
+            return new Response(response.body, {
+              headers: {
+                "Content-Type": "application/x-ndjson",
+                "Transfer-Encoding": "chunked",
+              },
+            });
+          }
+
           const data = await response.json();
           console.log(`OCR Success with server: ${sanitizedBaseUrl}`);
           return NextResponse.json(data);

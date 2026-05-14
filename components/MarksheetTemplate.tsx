@@ -73,7 +73,7 @@ export default function MarksheetTemplate({ data, id = "marksheet-pdf" }: { data
         .marksheet-page .info-table .lbl { font-weight: normal; width: 148px; }
 
         .marksheet-page .main-table { width: 100%; border-collapse: collapse; font-size: 12px; }
-        .marksheet-page .main-table th, .marksheet-page .main-table td { border: 1px solid #000; padding: 4px 5px; text-align: center; }
+        .marksheet-page .main-table th, .marksheet-page .main-table td { border: 0.75px solid #000; padding: 4px 5px; text-align: center; }
         .marksheet-page .main-table th { font-weight: bold; }
         .marksheet-page .main-table td.left { text-align: left; }
         .marksheet-page .main-table .total-row td { font-weight: bold; }
@@ -82,16 +82,16 @@ export default function MarksheetTemplate({ data, id = "marksheet-pdf" }: { data
           display: flex;
           justify-content: space-between;
           align-items: center;
-          border: 1px solid #000;
+          border: 0.75px solid #000;
           border-top: none;
           padding: 4px 8px;
           font-size: 12.5px;
         }
-        .marksheet-page .gpa-val { border: 1px solid #000; padding: 2px 14px; font-weight: bold; font-size: 13px; }
+        .marksheet-page .gpa-val { border: 0.75px solid #000; padding: 2px 14px; font-weight: bold; font-size: 13px; }
 
         .marksheet-page .bottom { display: flex; gap: 20px; margin-top: 14px; align-items: flex-start; }
         .marksheet-page .summary-table { border-collapse: collapse; font-size: 11.5px; width: 100%; }
-        .marksheet-page .summary-table th, .marksheet-page .summary-table td { border: 1px solid #000; padding: 3px 6px; text-align: center; }
+        .marksheet-page .summary-table th, .marksheet-page .summary-table td { border: 0.75px solid #000; padding: 3px 6px; text-align: center; }
         
         .marksheet-page .signature-block { text-align: right; margin-top: 20px; }
         .marksheet-page .sig-text { font-family: 'Brush Script MT', cursive; font-size: 28px; line-height: 1; }
@@ -128,18 +128,25 @@ export default function MarksheetTemplate({ data, id = "marksheet-pdf" }: { data
           line-height: 1.4;
           flex: 1;
         }
-        .v-hash {
-          font-family: monospace;
-          background: #f8f8f8;
-          padding: 4px 8px;
-          border-radius: 4px;
-          display: block;
-          margin-top: 4px;
-          color: #222;
-          font-size: 9px;
-          word-break: break-all;
-          border: 1px solid #eee;
-        }
+          .v-hash {
+            font-family: monospace;
+            background: #f8f8f8;
+            padding: 4px 8px;
+            border-radius: 4px;
+            display: block;
+            margin-top: 4px;
+            color: #222;
+            font-size: 9px;
+            word-break: break-all;
+            border: 0.5px solid #eee;
+          }
+          @media print {
+            .marksheet-page { box-shadow: none !important; border: 0.5px solid #eee !important; }
+            .main-table, .main-table th, .main-table td { border-width: 0.5px !important; }
+            .summary-table, .summary-table th, .summary-table td { border-width: 0.5px !important; }
+            .gpa-val { border-width: 0.5px !important; }
+            .verification-footer { border-top-width: 1px !important; }
+          }
       `}} />
 
       <div className="marksheet-page">
@@ -275,7 +282,7 @@ export default function MarksheetTemplate({ data, id = "marksheet-pdf" }: { data
           </div>
 
 
-          <div style={{ border: '1px solid #111', borderTop: 'none', padding: '3px 8px', fontSize: '12.5px', minHeight: 22 }}>
+          <div style={{ border: '0.75px solid #111', borderTop: 'none', padding: '3px 8px', fontSize: '12.5px', minHeight: 22 }}>
             <strong>Remarks :</strong> {data.Status || data.status || ""}
           </div>
 

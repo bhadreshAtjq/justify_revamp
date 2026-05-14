@@ -17,6 +17,7 @@ export function mapCertificatePayload(data: any): any {
   return {
     certificate_no: String(certNo || ""),
     no: String(finalNo || ""),
+    registration_no: String(findVal(["registration_no", "Reg No", "Registration_No", "enrollment_no", "enrollment"]) || ""),
     name: String(findVal(["Student_Name", "name", "Student Name", "Full_Name", "Name"]) || ""),
     degree: String(findVal(["Degree", "degree", "course"]) || ""),
     branch: String(findVal(["Branch", "branch", "Major", "major"]) || ""),

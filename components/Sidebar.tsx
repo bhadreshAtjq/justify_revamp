@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { FaColumns, FaShieldAlt, FaFlask, FaBuilding, FaSignOutAlt } from "react-icons/fa";
+import { FaColumns, FaShieldAlt, FaFlask, FaBuilding, FaSignOutAlt, FaLayerGroup } from "react-icons/fa";
 import { useSession, signOut } from "next-auth/react";
 
 export default function Sidebar() {
@@ -13,6 +13,7 @@ export default function Sidebar() {
     { href: "/dashboard", label: "Dashboard", icon: FaColumns, roles: ["SUPER_ADMIN", "INSTITUTION_ADMIN", "ISSUER", "AUDITOR"] },
     { href: "/verify", label: "Verify", icon: FaShieldAlt, roles: ["SUPER_ADMIN", "INSTITUTION_ADMIN", "ISSUER", "AUDITOR", "PUBLIC_VERIFIER"] },
     { href: "/sandbox", label: "Merkle Sandbox", icon: FaFlask, roles: ["SUPER_ADMIN", "INSTITUTION_ADMIN"] },
+    { href: "/bulk-ocr", label: "Bulk OCR Ingestion", icon: FaLayerGroup, roles: ["SUPER_ADMIN", "INSTITUTION_ADMIN", "ISSUER"] },
     { href: "/admin/tenants", label: "Tenants", icon: FaBuilding, roles: ["SUPER_ADMIN"] },
   ];
 

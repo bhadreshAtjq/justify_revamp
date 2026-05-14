@@ -93,14 +93,52 @@ export function discoverSubjects(data: any): Subject[] {
 
 export function mapStudentMetadata(data: any) {
   const findVal = (patterns: string[]) => {
+    // 1. Try structured data keys first
     for (const p of patterns) {
       const match = Object.keys(data).find(k => {
         const tk = k.trim().toLowerCase().replace(/[\s_.]/g, '');
         const tp = p.toLowerCase().replace(/[\s_.]/g, '');
         return tk === tp || tk.includes(tp);
       });
-      if (match) return data[match];
+      if (match && data[match] && String(data[match]).trim() !== "" && String(data[match]).trim().toLowerCase() !== "n/a") return data[match];
     }
+
+    // 2. Fallback to regex extraction from raw_text if present
+    const rawText = data.raw_text || data.__raw_text;
+    if (rawText) {
+      const allLabels = ["Faculty", "Academic year", "Degree Course", "Semester", "Major Subject", "Examination held in", "Minor Subject", "Name of College", "Name of Polytechnic", "Registration No", "Reg No", "Full Name", "Student Name", "Name"];
+      
+      for (const p of patterns) {
+        const escapedP = p.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        const regex = new RegExp(`${escapedP}\\s*[:\\t\\s-]+\\s*([^\\n\\t\\r|]+)`, 'i');
+        const match = rawText.match(regex);
+        
+        if (match && match[1]) {
+          let val = match[1].trim();
+          
+          // Truncate if we hit another known label
+          for (const label of allLabels) {
+            // Don't truncate by the label we are currently looking for
+            if (label.toLowerCase() === p.toLowerCase()) continue;
+            
+            const labelRegex = new RegExp(`\\s+${label.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\s*:`, 'i');
+            const labelMatch = val.match(labelRegex);
+            if (labelMatch) {
+              val = val.substring(0, labelMatch.index).trim();
+            }
+          }
+
+          // Truncate by other common separators
+          const nextLabelIndex = val.search(/[:\t]| {3,}/);
+          if (nextLabelIndex !== -1) {
+            val = val.substring(0, nextLabelIndex).trim();
+          }
+          
+          if (val && val.length < 100 && val.toLowerCase() !== "semester") return val;
+        }
+      }
+    }
+
     return null;
   };
 
@@ -108,13 +146,13 @@ export function mapStudentMetadata(data: any) {
     regNo: findVal(["Registration No", "Reg No", "RegistrationNumber", "registration_no", "reg_no", "student_id", "Registration No."]) || "N/A",
     name: findVal(["Student Name", "Name", "Full Name", "student_name", "full_name"]) || "Unknown Student",
     gpa: findVal(["GPA", "OGPA", "CGPA", "Grade Point Average", "gpa", "ogpa"]) || "0.00",
-    faculty: findVal(["Faculty", "Department"]) || "Academic Affairs",
-    academicYear: findVal(["Academic Year", "Year", "Session"]) || "2017-2018",
-    degree: findVal(["Degree Course", "Degree_Course", "Degree", "Program", "Course"]) || "N/A",
-    semester: findVal(["Semester", "Term"]) || "N/A",
-    major: findVal(["Major Subject", "Major_Subject", "Major", "Branch", "Specialization"]) || "N/A",
-    minor: findVal(["Minor Subject", "Minor_Subject", "Minor"]) || "N/A",
-    college: findVal(["College", "Name of College", "University", "Institution"]) || "JustifAI Network",
-    examination: findVal(["Examination held in", "Examination Held In", "Examination", "Exam Session"]) || "N/A",
+    faculty: findVal(["Faculty", "faculty", "Department"]) || "Academic Affairs",
+    academicYear: findVal(["Academic Year", "academic_year", "Year", "Session"]) || "2017-2018",
+    degree: findVal(["Degree Course", "Degree_Course", "degree_course", "Degree", "Program", "Course"]) || "N/A",
+    semester: findVal(["Semester", "semester", "Term"]) || "N/A",
+    major: findVal(["Major Subject", "Major_Subject", "major_subject", "Major", "Branch", "Specialization"]) || "N/A",
+    minor: findVal(["Minor Subject", "Minor_Subject", "minor_subject", "Minor"]) || "N/A",
+    college: findVal(["Name of Polytechnic", "Name of College", "College", "college_name", "University", "Institution"]) || "JustifAI Network",
+    examination: findVal(["Examination held in", "Examination Held In", "examination_held_in", "Examination", "Exam Session"]) || "N/A",
   };
 }
