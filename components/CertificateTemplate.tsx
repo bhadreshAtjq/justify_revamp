@@ -256,11 +256,11 @@ export default function CertificateTemplate({ data, id = "certificate-pdf" }: { 
               <div className="cert-student-name-bold">{cert.name}</div>
 
               <div className="cert-legal-text">
-                and he is entitled to all rights and honours appertaining thereto. In testimony whereof are set the seal of the University and signature of the Vice Chancellor.
+                and he/she is entitled to all rights and honours appertaining thereto. In testimony whereof are set the seal of the University and signature of the Vice Chancellor.
               </div>
 
               <div className="cert-grade-text">
-                He has passed this examination with<br/>
+                He/She has passed this examination with<br/>
                 an Overall Grade Point Average of<br/>
                 {cert.ogpa || "---"} (10.000 basis) during the academic session
               </div>
