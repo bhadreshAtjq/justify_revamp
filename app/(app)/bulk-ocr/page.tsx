@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useCallback, useMemo, useRef } from "react";
-import { processBulkOCRAsync, pollJobStatus, JobSubmitResponse, BulkProcessingResponse, BulkProcessingResult, anchorRoot, logMerkle } from "@/services/api";
+import { processBulkOCRAsync, pollJobStatus, JobSubmitResponse, BulkProcessingResponse, BulkProcessingResult, anchorRoot, logMerkle, syncRecordsToDB } from "@/services/api";
 import { generateHashesFromRecords } from "@/lib/hash";
 import { buildMerkleTree } from "@/lib/merkle";
 import FileUploadDropzone from "@/components/FileUploadDropzone";
@@ -168,7 +168,7 @@ export default function BulkOCRPage() {
       const newJobId = jobData.job_id;
       setJobId(newJobId);
       setJobProgress({ completed: 0, total: jobData.total_files });
-      store.addActivityLog("bulk_ocr_queued", `Job ${newJobId.slice(0, 8)}... queued. Processing ${jobData.total_files} PDFs in background.`);
+      store.addActivityLog("bulk_ocr_started", `Job ${newJobId.slice(0, 8)}... queued. Processing ${jobData.total_files} PDFs in background.`);
 
       // Step 2: Poll every 4 seconds for progress
       pollIntervalRef.current = setInterval(async () => {
@@ -317,10 +317,10 @@ export default function BulkOCRPage() {
         console.log("in");
         try {
           console.log("currentTableData", currentTableData);
-
+          await syncRecordsToDB(currentTableData, uploadType);
+          store.addActivityLog("bulk_ocr_finished", "Database synchronization complete");
         } catch (dbErr) {
           console.warn("DB Sync failed but continuing to anchor:", dbErr);
-
         }
       }
 
@@ -781,13 +781,25 @@ export default function BulkOCRPage() {
                         marginBottom: '-350px' // Pull up bottom content to hide the empty scaled space
                       }}>
                         {viewingData.doc_type === 'marksheet' && (
-                          <MarksheetTemplate data={{ ...viewingData.data, raw_text: viewingData.raw_text }} />
+                          <MarksheetTemplate data={{ 
+                            ...viewingData.data, 
+                            raw_text: viewingData.raw_text, 
+                            keccak256_hash: viewingData.ledger_hash 
+                          }} />
                         )}
                         {viewingData.doc_type === 'certificate' && (
-                          <CertificateTemplate data={{ ...viewingData.data, raw_text: viewingData.raw_text }} />
+                          <CertificateTemplate data={{ 
+                            ...viewingData.data, 
+                            raw_text: viewingData.raw_text, 
+                            keccak256_hash: viewingData.ledger_hash 
+                          }} />
                         )}
                         {viewingData.doc_type === 'transcript' && (
-                          <TranscriptTemplate data={{ ...viewingData.data, raw_text: viewingData.raw_text }} />
+                          <TranscriptTemplate data={{ 
+                            ...viewingData.data, 
+                            raw_text: viewingData.raw_text, 
+                            keccak256_hash: viewingData.ledger_hash 
+                          }} />
                         )}
                       </div>
                     </div>

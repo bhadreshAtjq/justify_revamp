@@ -68,24 +68,25 @@ export async function POST(req: Request) {
     };
 
     const recordsToCreate = students.map((s: any) => {
+      const recordType = s.doc_type || s.type || type;
       const meta = mapStudentMetadata(s);
       
-      let dataToStore = s;
-      if (type === "certificate") {
+      let dataToStore = { ...s };
+      if (recordType === "certificate") {
         dataToStore = mapCertificatePayload(s);
       }
 
-      const ingestionHash = s.hash || s.keccak256_hash || generateStudentHash(s, defaultStrategy, type);
+      const ingestionHash = s.hash || s.keccak256_hash || s.ledger_hash || generateStudentHash(s, defaultStrategy, recordType);
       dataToStore.merkle_leaf = ingestionHash;
 
       return {
-        registrationNo: meta.regNo,
-        name: meta.name,
-        gpa: meta.gpa,
+        registrationNo: meta.regNo || "N/A",
+        name: meta.name || "Unknown Student",
+        gpa: meta.gpa || "0.00",
         data: dataToStore,
         keccak256Hash: ingestionHash,
         merkleLeaf: ingestionHash,
-        type: type,
+        type: recordType,
         institutionId: session.user.institutionId
       };
     });

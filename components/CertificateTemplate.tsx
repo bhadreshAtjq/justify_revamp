@@ -216,7 +216,7 @@ export default function CertificateTemplate({ data, id = "certificate-pdf" }: { 
           <div className="cert-double-border"></div>
           <div className="cert-inner-content">
             <div className="cert-top-meta">
-              <div></div>
+              <div>{cert.top_left_no}</div>
               <div>{cert.certificate_no}</div>
             </div>
 

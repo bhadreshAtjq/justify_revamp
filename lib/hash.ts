@@ -51,9 +51,11 @@ export function generateStudentHash(
 
   }
 
+  // IMPORTANT: Must match Python's json.dumps(payload, separators=(',', ':'))
+  // JS JSON.stringify without 3rd arg is already compact (no spaces) — same output.
   const combined = JSON.stringify(payload);
 
-  // Debug log
+  // Debug log (shows the exact string being hashed — compare with Python logs)
   console.log("DEBUG: Canonical Hash Input ->", combined);
 
   // 0x prefix matches Python's Web3.to_hex()

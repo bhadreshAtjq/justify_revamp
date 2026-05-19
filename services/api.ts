@@ -170,6 +170,8 @@ export interface JobStatusResponse {
   updated_at: string;
   files: Record<string, JobFile>;
   results: BulkProcessingResult[];
+  completed_parents?: number;
+  total_parents?: number;
 }
 
 // Separate type for the 202 submit response (different shape from poll response)
