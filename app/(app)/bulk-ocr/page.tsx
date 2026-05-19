@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useCallback, useMemo } from "react";
-import { processBulkOCR, BulkProcessingResponse, BulkProcessingResult, anchorRoot, logMerkle } from "@/services/api";
+import { useState, useCallback, useMemo, useRef } from "react";
+import { processBulkOCRAsync, pollJobStatus, JobSubmitResponse, BulkProcessingResponse, BulkProcessingResult, anchorRoot, logMerkle } from "@/services/api";
 import { generateHashesFromRecords } from "@/lib/hash";
 import { buildMerkleTree } from "@/lib/merkle";
 import FileUploadDropzone from "@/components/FileUploadDropzone";
@@ -23,6 +23,7 @@ import {
   FaDatabase,
   FaLink,
   FaCheck,
+  FaCopy,
   FaRocket,
   FaDownload,
   FaTable,
@@ -63,7 +64,12 @@ export default function BulkOCRPage() {
   const [merkleLeaves, setMerkleLeaves] = useState<string[]>([]);
   const [anchorResult, setAnchorResult] = useState<any>(null);
   const [modalTab, setModalTab] = useState<"structured" | "raw" | "json" | "preview">("structured");
+  const [copied, setCopied] = useState(false);
   const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
+  const [jobId, setJobId] = useState<string | null>(null);
+  const [jobProgress, setJobProgress] = useState<{ completed: number; total: number } | null>(null);
+  const pollIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const loggedFilesRef = useRef<Set<string>>(new Set());
 
   const pageSize = 10;
 
@@ -142,86 +148,80 @@ export default function BulkOCRPage() {
       return;
     }
 
+    // Stop any existing poll
+    if (pollIntervalRef.current) clearInterval(pollIntervalRef.current);
+
     setZipFile(file);
     setIsProcessing(true);
-    setResults({
-      total_files: 0,
-      processed_files: 0,
-      failed_files: 0,
-      results: []
-    });
+    setJobId(null);
+    setJobProgress(null);
+    setResults({ total_files: 0, processed_files: 0, failed_files: 0, results: [] });
     setViewingData(null);
     store.setError(null);
+    loggedFilesRef.current.clear();
 
     try {
-      store.addActivityLog("bulk_ocr_started", `Initializing streaming extraction for: ${file.name}`);
-      
-      const response = await processBulkOCR(file);
-      const reader = response.body?.getReader();
-      if (!reader) throw new Error("ReadableStream not supported by browser.");
+      store.addActivityLog("bulk_ocr_started", `Submitting ZIP for async processing: ${file.name}`);
 
-      const decoder = new TextDecoder();
-      let buffer = "";
+      // Step 1: Submit ZIP — returns 202 instantly with job_id
+      const jobData: JobSubmitResponse = await processBulkOCRAsync(file);
+      const newJobId = jobData.job_id;
+      setJobId(newJobId);
+      setJobProgress({ completed: 0, total: jobData.total_files });
+      store.addActivityLog("bulk_ocr_queued", `Job ${newJobId.slice(0, 8)}... queued. Processing ${jobData.total_files} PDFs in background.`);
 
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
+      // Step 2: Poll every 4 seconds for progress
+      pollIntervalRef.current = setInterval(async () => {
+        try {
+          const job = await pollJobStatus(newJobId);
+          const compVal = job.completed_parents !== undefined ? job.completed_parents : job.completed;
+          const totVal = job.total_parents !== undefined ? job.total_parents : job.total;
+          setJobProgress({ completed: compVal, total: totVal });
 
-        const chunkText = decoder.decode(value, { stream: true });
-        console.log("RAW STREAM CHUNK RECEIVED:", chunkText.length, "bytes");
-        buffer += chunkText;
-        const lines = buffer.split("\n");
-        buffer = lines.pop() || "";
+          // Rebuild results array from job.files map + job.results
+          const fileResults: BulkProcessingResult[] = Object.entries(job.files).map(([fname, f]) => ({
+            filename: fname,
+            doc_type: f.doc_type || "pending",
+            status: f.status,
+            ledger_hash: f.ledger_hash,
+            error: f.error || undefined,
+          }));
 
-        for (const line of lines) {
-          const trimmedLine = line.trim();
-          if (!trimmedLine) continue;
-          
-          try {
-            const chunk = JSON.parse(trimmedLine);
-            console.log("PARSED CHUNK:", chunk.type);
-            
-            if (chunk.type === "metadata") {
-              setResults(prev => ({ ...prev!, total_files: chunk.total_files }));
-            } else if (chunk.type === "status_update") {
-              setResults(prev => ({
-                ...prev!,
-                results: [
-                  ...prev!.results,
-                  { filename: chunk.filename, status: "processing", doc_type: "pending" }
-                ]
-              }));
-            } else if (chunk.type === "result") {
-              setResults(prev => {
-                // Remove the processing placeholder if it exists for this file
-                const filtered = prev!.results.filter(r => 
-                  !(r.filename === chunk.data.filename && r.status === "processing") &&
-                  !(r.filename === chunk.data.filename.split(' (Part')[0] && r.status === "processing")
-                );
-                
-                const newItems = [...filtered, chunk.data];
-                const processed = newItems.filter(r => r.status === "success").length;
-                const failed = newItems.filter(r => r.status !== "success").length;
-                
-                return {
-                  ...prev!,
-                  results: newItems,
-                  processed_files: processed,
-                  failed_files: failed
-                };
-              });
+          // Merge structured data from results array
+          for (const r of job.results) {
+            const idx = fileResults.findIndex(f => f.filename === r.filename);
+            if (idx !== -1) {
+              fileResults[idx].data = r.data;
+              fileResults[idx].raw_text = r.raw_text;
+              
+              if (r.raw_text && !loggedFilesRef.current.has(r.filename)) {
+                console.log(`\n========== OCR TEXT FOR ${r.filename} ==========\n${r.raw_text}\n=========================================================\n`);
+                loggedFilesRef.current.add(r.filename);
+              }
             }
-          } catch (e) {
-            console.error("Error parsing stream chunk:", e, line);
           }
-        }
-      }
 
-      store.addActivityLog("bulk_ocr_finished", `Real-time extraction complete.`);
+          setResults({
+            total_files: job.total,
+            processed_files: job.completed,
+            failed_files: job.failed,
+            results: fileResults,
+          });
+
+          if (job.status === "done" || job.status === "failed") {
+            clearInterval(pollIntervalRef.current!);
+            pollIntervalRef.current = null;
+            setIsProcessing(false);
+            store.addActivityLog("bulk_ocr_finished", `Job complete. ${compVal}/${totVal} succeeded.`);
+          }
+        } catch (pollErr: any) {
+          console.error("Poll error:", pollErr);
+        }
+      }, 4000);
+
     } catch (err: any) {
-      store.setError(err.message || "Bulk processing failed");
-      store.addActivityLog("bulk_ocr_error", `Pipeline Error: ${err.message}`);
-    } finally {
+      store.setError(err.message || "Bulk processing submission failed");
+      store.addActivityLog("bulk_ocr_error", `Submission Error: ${err.message}`);
       setIsProcessing(false);
     }
   }, [store]);
@@ -258,7 +258,7 @@ export default function BulkOCRPage() {
     setIsGeneratingHashes(true);
     try {
       const currentTableData = results ? results.results
-        .filter(res => res.status === 'success' && res.data)
+        .filter(res => res.status === 'success' && res.data && res.doc_type !== 'mixed')
         .map(res => ({
           ...res.data,
           __filename: res.filename,
@@ -366,8 +366,23 @@ export default function BulkOCRPage() {
     }
   }, [uploadType]);
 
-  const filteredResults = results 
-    ? results.results.filter(res => res.doc_type === uploadType || res.doc_type === "pending") 
+  const filteredResults = results
+    ? results.results.filter(res => {
+        // Only show results that match the currently selected tab
+        if (res.doc_type !== uploadType) return false;
+
+        // Search filtering
+        if (!searchQuery.trim()) return true;
+        const q = searchQuery.toLowerCase();
+        const d = res.data || {};
+        return (
+          res.filename?.toLowerCase().includes(q) ||
+          res.doc_type?.toLowerCase().includes(q) ||
+          String(d.name || "").toLowerCase().includes(q) ||
+          String(d.registration_no || "").toLowerCase().includes(q) ||
+          String(d.certificate_no || "").toLowerCase().includes(q)
+        );
+      })
     : [];
 
   const totalPages = Math.ceil(filteredResults.length / pageSize);
@@ -439,8 +454,16 @@ export default function BulkOCRPage() {
             {isProcessing && (
               <div className="inner-card" style={{ marginTop: 24, textAlign: 'center', background: 'rgba(96, 153, 102, 0.05)', borderColor: 'var(--primary)' }}>
                 <FaSpinner className="animate-spin" style={{ fontSize: 32, color: 'var(--primary)', marginBottom: 12 }} />
-                <h4 style={{ color: 'var(--primary)' }}>AI Extraction Engine Running...</h4>
-                <p style={{ fontSize: 12, opacity: 0.6 }}>Processing batch as {uploadType.toUpperCase()} archive.</p>
+                <h4 style={{ color: 'var(--primary)' }}>
+                  {jobProgress
+                    ? `Processing: ${jobProgress.completed} / ${jobProgress.total} PDFs complete`
+                    : "Submitting job..."}
+                </h4>
+                <p style={{ fontSize: 12, opacity: 0.6 }}>
+                  {jobId
+                    ? `Job ID: ${jobId.slice(0, 8)}... — Polling every 4s`
+                    : "Uploading ZIP to server..."}
+                </p>
               </div>
             )}
           </section>
@@ -468,6 +491,7 @@ export default function BulkOCRPage() {
                     <tr>
                       <th style={{ minWidth: 60, width: 60, position: 'sticky', left: 0, zIndex: 10, background: 'var(--accent)', color: 'white' }}>#</th>
                       <th style={{ minWidth: 100 }}>DOC TYPE</th>
+                      <th style={{ minWidth: 180 }}>FILENAME</th>
                       {headers.map((h) => (
                         <th key={h} style={{ minWidth: 120 }}>{h.replace(/_/g, ' ').toUpperCase()}</th>
                       ))}
@@ -477,6 +501,14 @@ export default function BulkOCRPage() {
                   <tbody>
                     {currentRecords.map((record: any, idx) => {
                       const rowData = record.data || {};
+                      // Pick display fields based on the RECORD's actual doc_type, not the tab
+                      const recordHeaders = record.doc_type === 'transcript'
+                        ? ["registration_no", "name", "degree", "ogpa", "completion_year"]
+                        : record.doc_type === 'certificate'
+                        ? ["certificate_no", "name", "degree", "date", "class_division"]
+                        : record.doc_type === 'marksheet'
+                        ? ["registration_no", "name", "gpa"]
+                        : headers; // fallback to tab headers for pending rows
                       return (
                         <tr key={idx}>
                           <td style={{ fontWeight: 800, opacity: 0.3, position: 'sticky', left: 0, zIndex: 5, background: '#f8fafc' }}>
@@ -484,22 +516,25 @@ export default function BulkOCRPage() {
                           </td>
                           <td>
                             <span className="badge-premium" style={{
-                              background: record.doc_type === 'transcript' ? '#3b82f6' : record.doc_type === 'marksheet' ? '#10b981' : '#f59e0b',
+                              background: record.doc_type === 'transcript' ? '#3b82f6' : record.doc_type === 'marksheet' ? '#10b981' : record.doc_type === 'certificate' ? '#f59e0b' : '#94a3b8',
                               color: 'white'
                             }}>
-                              {record.doc_type}
+                              {record.doc_type || "pending"}
                             </span>
                           </td>
-                          {headers.map((h) => (
+                          <td style={{ fontSize: 11, opacity: 0.7, maxWidth: 180, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                            {record.filename}
+                          </td>
+                          {recordHeaders.map((h) => (
                             <td key={h}>{String(rowData[h] || "—")}</td>
                           ))}
                           <td style={{ position: 'sticky', right: 0, zIndex: 5, background: '#f8fafc' }}>
                             <div style={{ display: 'flex', gap: 8, justifyContent: 'center' }}>
-                              {record.status === "processing" ? (
+                              {record.status === "pending" || record.status === "processing" ? (
                                 <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: 'var(--primary)', fontSize: 11, fontWeight: 700 }}>
-                                  <FaSpinner className="animate-spin" /> Analyzing...
+                                  <FaSpinner className="animate-spin" /> {record.status === "processing" ? "Analyzing..." : "Queued"}
                                 </div>
-                              ) : (
+                              ) : record.status === "success" ? (
                                 <button
                                   onClick={() => setViewingData(record)}
                                   className="btn-premium btn-solid"
@@ -507,6 +542,10 @@ export default function BulkOCRPage() {
                                 >
                                   INSPECT RECORD
                                 </button>
+                              ) : (
+                                <div style={{ fontSize: 11, color: '#ef4444', fontWeight: 600 }}>
+                                  {record.error || "Failed"}
+                                </div>
                               )}
                             </div>
                           </td>
@@ -782,10 +821,36 @@ export default function BulkOCRPage() {
 
                 {modalTab === 'json' && (
                   <div className="animate-slide-up">
-                    <h4 style={{ marginBottom: 24, display: 'flex', alignItems: 'center', gap: 10 }}>
-                      <div style={{ width: 4, height: 20, background: 'var(--primary)', borderRadius: 2 }}></div>
-                      Machine Readable JSON
-                    </h4>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
+                      <h4 style={{ margin: 0, display: 'flex', alignItems: 'center', gap: 10 }}>
+                        <div style={{ width: 4, height: 20, background: 'var(--primary)', borderRadius: 2 }}></div>
+                        Machine Readable JSON
+                      </h4>
+                      <button
+                        onClick={() => {
+                          navigator.clipboard.writeText(JSON.stringify(viewingData.data, null, 2));
+                          setCopied(true);
+                          setTimeout(() => setCopied(false), 2000);
+                        }}
+                        style={{
+                          padding: '8px 16px',
+                          borderRadius: 8,
+                          border: '1px solid var(--primary)',
+                          background: copied ? 'rgba(96, 153, 102, 0.1)' : 'transparent',
+                          color: 'var(--primary)',
+                          fontSize: 12,
+                          fontWeight: 600,
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: 8,
+                          cursor: 'pointer',
+                          transition: 'all 0.2s'
+                        }}
+                      >
+                        {copied ? <FaCheck /> : <FaCopy />}
+                        {copied ? "Copied!" : "Copy JSON"}
+                      </button>
+                    </div>
                     <pre style={{
                       padding: 24,
                       background: '#1e1e1e',

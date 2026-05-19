@@ -7,6 +7,8 @@ import {
   FaLink,
   FaSearch,
   FaHashtag,
+  FaPlay,
+  FaExclamationCircle,
 } from "react-icons/fa";
 import type { ActivityLogEntry } from "@/store/useAppStore";
 
@@ -22,6 +24,11 @@ const iconMap: Record<ActivityLogEntry["type"], React.ReactNode> = {
   ocr_complete: <FaSearch />,
   verified: <FaCheckCircle />,
   quality_validated: <FaCheckCircle />,
+  bulk_ocr_started: <FaPlay />,
+  bulk_ocr_finished: <FaCheckCircle />,
+  bulk_ocr_error: <FaExclamationCircle />,
+  anchoring_started: <FaLink />,
+  anchor_error: <FaExclamationCircle />,
 };
 
 export default function ActivityLog({ entries }: ActivityLogProps) {

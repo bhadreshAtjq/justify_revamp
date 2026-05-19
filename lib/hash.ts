@@ -69,18 +69,20 @@ export function generateHashesFromRecords(
   type: string = "marksheet"
 ): { hash: string; registrationNo: string; index: number }[] {
   return records.map((record, index) => {
-    const registrationNo =
-      record["Registration_No"] ||
-      record["registration_no"] ||
-      record["RegistrationNo"] ||
-      record["Reg_No"] ||
-      record["Certificate_No"] ||
-      record["Certificate No"] ||
-      record["no"] ||
-      `UNNAMED_${index}`;
+    const docType = record.__doc_type || record.doc_type || type;
+    const registrationNo = (docType === "certificate")
+      ? (record["registration_no"] || record["Registration_No"] || record["RegistrationNo"] || record["Reg_No"] || "")
+      : (record["Registration_No"] ||
+         record["registration_no"] ||
+         record["RegistrationNo"] ||
+         record["Reg_No"] ||
+         record["Certificate_No"] ||
+         record["Certificate No"] ||
+         record["no"] ||
+         `UNNAMED_${index}`);
 
     // Use pre-calculated ledger hash from backend if available for 100% parity
-    const hash = record.__ledger_hash || record.ledger_hash || generateStudentHash(record, strategy, type);
+    const hash = record.__ledger_hash || record.ledger_hash || generateStudentHash(record, strategy, docType);
 
     return {
       hash,

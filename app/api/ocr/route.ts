@@ -37,6 +37,7 @@ export async function POST(req: Request) {
       if (type === "certificate") OCR_SERVER_URL = `${sanitizedBaseUrl}/api/v1/certificate`;
       if (type === "transcript") OCR_SERVER_URL = `${sanitizedBaseUrl}/api/v1/transcript`;
       if (type === "bulk") OCR_SERVER_URL = `${sanitizedBaseUrl}/api/v1/bulk_process_zip`;
+      if (type === "bulk_async") OCR_SERVER_URL = `${sanitizedBaseUrl}/api/v1/bulk_process_zip_async`;
 
       console.log(`Attempting OCR with server: ${OCR_SERVER_URL}`);
 
@@ -50,9 +51,9 @@ export async function POST(req: Request) {
         });
 
         if (response.ok) {
-          // Handle Streaming for Bulk Processing
+          // Handle Streaming for legacy Bulk Processing
           if (type === "bulk") {
-            console.log(`Bulk OCR Success with server: ${sanitizedBaseUrl}`);
+            console.log(`Bulk OCR (streaming) success with server: ${sanitizedBaseUrl}`);
             return new Response(response.body, {
               headers: {
                 "Content-Type": "application/x-ndjson",

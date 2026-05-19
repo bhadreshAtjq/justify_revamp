@@ -129,7 +129,7 @@ export async function processOCR(file: File, type: string = "marksheet"): Promis
 }
 
 /**
- * Process bulk documents from a ZIP file.
+ * Process bulk documents from a ZIP file (legacy — streaming mode).
  */
 export async function processBulkOCR(file: File): Promise<Response> {
   const formData = new FormData();
@@ -147,6 +147,72 @@ export async function processBulkOCR(file: File): Promise<Response> {
   }
 
   return response;
+}
+
+// ─────────────────────────────────────────────────────────────
+// ASYNC JOB QUEUE  (production-grade, rate-limit-safe)
+// ─────────────────────────────────────────────────────────────
+
+export interface JobFile {
+  status: "pending" | "processing" | "success" | "failed" | "error";
+  doc_type: string | null;
+  error: string | null;
+  ledger_hash?: string;
+}
+
+export interface JobStatusResponse {
+  job_id: string;
+  status: "pending" | "running" | "done" | "failed";
+  total: number;        // returned by GET /job/{id}
+  completed: number;
+  failed: number;
+  created_at: string;
+  updated_at: string;
+  files: Record<string, JobFile>;
+  results: BulkProcessingResult[];
+}
+
+// Separate type for the 202 submit response (different shape from poll response)
+export interface JobSubmitResponse {
+  job_id: string;
+  status: string;
+  total_files: number;  // POST /bulk_process_zip_async returns total_files
+  filenames: string[];
+  message: string;
+  poll_url: string;
+}
+
+/**
+ * Submit a ZIP for async background processing.
+ * Returns immediately with a job_id. No connection held open.
+ */
+export async function processBulkOCRAsync(file: File): Promise<JobSubmitResponse> {
+  const formData = new FormData();
+  formData.append("file", file);
+  formData.append("type", "bulk_async");
+
+  const response = await fetch(`/api/ocr`, {
+    method: "POST",
+    body: formData,
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text().catch(() => "Unknown error");
+    throw new Error(`Bulk OCR (async) submission failed: ${errorText}`);
+  }
+
+  return await response.json() as JobSubmitResponse;
+}
+
+/**
+ * Poll the job status endpoint for a given job_id.
+ */
+export async function pollJobStatus(jobId: string): Promise<JobStatusResponse> {
+  const response = await fetch(`/api/ocr-job/${jobId}`);
+  if (!response.ok) {
+    throw new Error(`Job poll failed: ${response.status}`);
+  }
+  return await response.json() as JobStatusResponse;
 }
 
 /**
