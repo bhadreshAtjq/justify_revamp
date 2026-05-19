@@ -137,6 +137,8 @@ export default function TranscriptTemplate({ data, id = "transcript-pdf" }: { da
           <tr>
             <th style={{ width: '110px' }}>Course Number</th>
             <th>Title of the course</th>
+            <th style={{ width: '80px' }}>Credit Hours</th>
+            <th style={{ width: '80px' }}>Grade Point</th>
             <th style={{ width: '90px' }}>Credit Points</th>
           </tr>
         </thead>
@@ -148,18 +150,20 @@ export default function TranscriptTemplate({ data, id = "transcript-pdf" }: { da
                 <React.Fragment key={`${yIdx}-${sIdx}`}>
                   <tr className="sem-header-row">
                     <td style={{ borderBottom: 'none' }}>{sIdx === 0 ? yearObj.year : ""}</td>
-                    <td colSpan={2} style={{ textAlign: 'right', textTransform: 'uppercase' }}>{semObj.semester}</td>
+                    <td colSpan={4} style={{ textAlign: 'right', textTransform: 'uppercase' }}>{semObj.semester}</td>
                   </tr>
                   {semObj.courses.map((course: any, cIdx: number) => (
                     <tr key={cIdx} className="course-row">
                       <td>{course.course_number}</td>
                       <td style={{ textAlign: 'left' }}>{course.title}</td>
+                      <td style={{ textAlign: 'center' }}>{course.credits || "---"}</td>
+                      <td style={{ textAlign: 'center' }}>{course.grade || "---"}</td>
                       <td style={{ textAlign: 'center' }}>{course.credit_points}</td>
                     </tr>
                   ))}
                   <tr className="sem-footer-row">
                     <td></td>
-                    <td colSpan={2} style={{ borderTop: '1.5px solid #000', padding: '5px' }}>
+                    <td colSpan={4} style={{ borderTop: '1.5px solid #000', padding: '5px' }}>
                       <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '25px' }}>
                         <span>G.P.A. : {semObj.gpa}</span>
                         <span>C.G.P.A. : {semObj.cgpa}</span>
@@ -176,6 +180,8 @@ export default function TranscriptTemplate({ data, id = "transcript-pdf" }: { da
             <tr key={cIdx} className="course-row">
               <td>{course.course_number}</td>
               <td style={{ textAlign: 'left' }}>{course.title}</td>
+              <td style={{ textAlign: 'center' }}>{course.credits || "---"}</td>
+              <td style={{ textAlign: 'center' }}>{course.grade || "---"}</td>
               <td style={{ textAlign: 'center' }}>{course.credit_points}</td>
             </tr>
           ))}

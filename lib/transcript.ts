@@ -54,14 +54,18 @@ export function mapTranscriptPayload(data: any): any {
           courses: (s.courses || []).map((c: any) => ({
             course_number: String(c.course_number || c.code || c.Course_Number || ""),
             title: String(c.title || c.name || c.Course_Name || ""),
-            credit_points: cleanCreditPoints(c.credit_points || c.credits || c.Credit_Points || "")
+            credits: String(c.credits || c.Credit_Hours || ""),
+            grade: String(c.grade || c.Grade_Point || ""),
+            credit_points: cleanCreditPoints(c.credit_points || c.Credit_Points || "")
           }))
         }))
       })),
       courses: (data.courses || []).map((c: any) => ({
         course_number: String(c.course_number || c.code || c.Course_Number || ""),
         title: String(c.title || c.name || c.Course_Name || ""),
-        credit_points: cleanCreditPoints(c.credit_points || c.credits || c.Credit_Points || "")
+        credits: String(c.credits || c.Credit_Hours || ""),
+        grade: String(c.grade || c.Grade_Point || ""),
+        credit_points: cleanCreditPoints(c.credit_points || c.Credit_Points || "")
       }))
     };
   }
@@ -106,6 +110,8 @@ export function mapTranscriptPayload(data: any): any {
     for (let c = 1; c <= 15; c++) {
       const courseCode = data[`${semPrefix}C${c}_Code`] || data[`${semPrefix}C${c}_code`] || data[`${semPrefix}c${c}_code`];
       const courseName = data[`${semPrefix}C${c}_Name`] || data[`${semPrefix}C${c}_name`] || data[`${semPrefix}c${c}_name`];
+      const creditHours = data[`${semPrefix}C${c}_Credits`] || data[`${semPrefix}C${c}_credits`] || data[`${semPrefix}c${c}_credits`] || data[`${semPrefix}C${c}_Credit_Hours`] || data[`${semPrefix}c${c}_credit_hours` || ""];
+      const gradePoint = data[`${semPrefix}C${c}_Grade`] || data[`${semPrefix}C${c}_grade`] || data[`${semPrefix}c${c}_grade`] || data[`${semPrefix}C${c}_Grade_Point`] || data[`${semPrefix}c${c}_grade_point` || ""];
       const creditPoints = data[`${semPrefix}C${c}_Credit_Points`] || data[`${semPrefix}C${c}_credit_points`] || data[`${semPrefix}c${c}_credit_points`];
 
       if (!courseCode && !courseName) continue;
@@ -113,6 +119,8 @@ export function mapTranscriptPayload(data: any): any {
       semester.courses.push({
         course_number: String(courseCode || ""),
         title: String(courseName || ""),
+        credits: String(creditHours || ""),
+        grade: String(gradePoint || ""),
         credit_points: cleanCreditPoints(creditPoints || "")
       });
     }

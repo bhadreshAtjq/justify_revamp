@@ -25,7 +25,25 @@ export function generateStudentHash(
 
   if (type === "transcript") {
     // 1. Full Transcript Structured Payload
-    payload = mapTranscriptPayload(record);
+    const rawPayload = mapTranscriptPayload(record);
+    // Deep clone and strip credits and grade from courses to match python canonical hash
+    payload = {
+      ...rawPayload,
+      years: (rawPayload.years || []).map((y: any) => ({
+        ...y,
+        semesters: (y.semesters || []).map((s: any) => ({
+          ...s,
+          courses: (s.courses || []).map((c: any) => {
+            const { credits, grade, ...rest } = c;
+            return rest;
+          })
+        }))
+      })),
+      courses: (rawPayload.courses || []).map((c: any) => {
+        const { credits, grade, ...rest } = c;
+        return rest;
+      })
+    };
   } else if (type === "certificate") {
     // 2. Certificate Payload
     payload = mapCertificatePayload(record);
