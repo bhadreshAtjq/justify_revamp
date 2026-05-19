@@ -6,7 +6,8 @@ const OCR_SERVERS = [
   process.env.BASE_URL,
   process.env.BASE_URL_1,
   process.env.BASE_URL_2,
-  process.env.BASE_URL_3
+  process.env.BASE_URL_3,
+  "https://final-ocr.onrender.com"
 ].filter(Boolean).map(url => url!.trim().replace(/['"]/g, "")) as string[];
 
 export const maxDuration = 300; // Allow up to 5 minutes for large PDF processing
