@@ -5,6 +5,25 @@
 
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE || "";
 
+let cachedOcrUrl: string | null = null;
+
+async function getOCRBaseUrl(): Promise<string> {
+  if (cachedOcrUrl) return cachedOcrUrl;
+  try {
+    const res = await fetch("/api/ocr-url");
+    if (res.ok) {
+      const data = await res.json();
+      if (data.url) {
+        cachedOcrUrl = data.url;
+        return cachedOcrUrl;
+      }
+    }
+  } catch (err) {
+    console.error("Failed to fetch OCR URL config, falling back:", err);
+  }
+  return "https://final-ocr.onrender.com";
+}
+
 export interface AnchorResponse {
   txHash: string;
   blockNumber: number;
@@ -110,11 +129,15 @@ export async function logMerkle(root: string, leavesCount: number): Promise<void
  * Process document image/PDF through OCR based on document type.
  */
 export async function processOCR(file: File, type: string = "marksheet"): Promise<OCRResponse> {
+  const ocrBase = await getOCRBaseUrl();
   const formData = new FormData();
   formData.append("file", file);
-  formData.append("type", type);
 
-  const response = await fetch(`/api/ocr`, {
+  let endpoint = `${ocrBase}/api/v1/marksheet_data_extraction`;
+  if (type === "certificate") endpoint = `${ocrBase}/api/v1/certificate`;
+  if (type === "transcript") endpoint = `${ocrBase}/api/v1/transcript`;
+
+  const response = await fetch(endpoint, {
     method: "POST",
     body: formData,
   });
@@ -132,11 +155,11 @@ export async function processOCR(file: File, type: string = "marksheet"): Promis
  * Process bulk documents from a ZIP file (legacy — streaming mode).
  */
 export async function processBulkOCR(file: File): Promise<Response> {
+  const ocrBase = await getOCRBaseUrl();
   const formData = new FormData();
   formData.append("file", file);
-  formData.append("type", "bulk");
 
-  const response = await fetch(`/api/ocr`, {
+  const response = await fetch(`${ocrBase}/api/v1/bulk_process_zip`, {
     method: "POST",
     body: formData,
   });
@@ -189,11 +212,11 @@ export interface JobSubmitResponse {
  * Returns immediately with a job_id. No connection held open.
  */
 export async function processBulkOCRAsync(file: File): Promise<JobSubmitResponse> {
+  const ocrBase = await getOCRBaseUrl();
   const formData = new FormData();
   formData.append("file", file);
-  formData.append("type", "bulk_async");
 
-  const response = await fetch(`/api/ocr`, {
+  const response = await fetch(`${ocrBase}/api/v1/bulk_process_zip_async`, {
     method: "POST",
     body: formData,
   });
@@ -210,7 +233,8 @@ export async function processBulkOCRAsync(file: File): Promise<JobSubmitResponse
  * Poll the job status endpoint for a given job_id.
  */
 export async function pollJobStatus(jobId: string): Promise<JobStatusResponse> {
-  const response = await fetch(`/api/ocr-job/${jobId}`);
+  const ocrBase = await getOCRBaseUrl();
+  const response = await fetch(`${ocrBase}/api/v1/job/${jobId}`);
   if (!response.ok) {
     throw new Error(`Job poll failed: ${response.status}`);
   }
