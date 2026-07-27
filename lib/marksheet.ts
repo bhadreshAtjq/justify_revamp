@@ -43,7 +43,7 @@ export function discoverSubjects(data: any): Subject[] {
         discovered[index].code = val;
       } else if (attrKey.includes('title') || attrKey.includes('name')) {
         discovered[index].title = val;
-      } else if (attrKey.includes('category')) {
+      } else if (attrKey.includes('category') || attrKey.includes('course_type') || attrKey.includes('coursetype')) {
         discovered[index].category = val;
       } else if (attrKey.includes('credit') && attrKey.includes('point')) {
         discovered[index].credit_points = val;

@@ -49,9 +49,16 @@ export function generateStudentHash(
     payload = mapCertificatePayload(record);
   } else {
     // 3. Marksheet/Standard Payload
+    // Must match Python build_marksheet_canonical_payload:
+    //   registration_no → name → gpa → examination_held_in → subjects[code,title,credit_points]
     const regNo = record.registration_no || record.Registration_No || mapStudentMetadata(record).regNo;
     const name = record.name || record.Student_Name || mapStudentMetadata(record).name;
     const gpa = record.gpa || record.GPA || mapStudentMetadata(record).gpa;
+    const examinationHeldIn =
+      record.examination_held_in ??
+      record.Examination_Held_In ??
+      record["Examination held in"] ??
+      "";
     
     const rawSubjects = Array.isArray(record.subjects) ? record.subjects : discoverSubjects(record);
 
@@ -59,7 +66,7 @@ export function generateStudentHash(
       registration_no: String(regNo || ""),
       name: String(name || ""),
       gpa: String(gpa || ""),
-    
+      examination_held_in: String(examinationHeldIn || ""),
       subjects: rawSubjects.map((s: any) => ({
         code: String(s.code || ""),
         title: String(s.title || ""),

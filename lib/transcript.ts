@@ -34,12 +34,13 @@ export function mapTranscriptPayload(data: any): any {
   // If the data is already structured properly from the OCR JSON response,
   // we MUST mathematically reconstruct it key-by-key to force deterministic ordering for the hashing engine.
   if ((data.years && Array.isArray(data.years) && data.years.length > 0) || (data.courses && Array.isArray(data.courses))) {
-    return {
+    // Keep key set aligned with CSV flat-path + Python canonical (no empty major/thesis_title).
+    const major = findVal(["major", "subject", "branch", "Major"]);
+    const thesisTitle = findVal(["thesis_title", "title of thesis", "thesis", "research_title"]);
+    const payload: any = {
       registration_no: findVal(["registration_no", "Registration_No", "reg_no", "Reg No", "registration number"]),
       name: findVal(["name", "Student_Name", "student_name", "Student Name", "full_name"]),
       degree: findVal(["degree", "Degree", "program", "course"]),
-      major: findVal(["major", "subject", "branch", "Major"]),
-      thesis_title: findVal(["thesis_title", "title of thesis", "thesis", "research_title"]),
       admission_year: findVal(["admission_year", "Admission_Year", "admission", "session"]),
       completion_year: findVal(["completion_year", "Completion_Year", "passing_year", "year"]),
       ogpa: String(findVal(["ogpa", "OGPA", "Overall_GPA", "overall_gpa", "cgpa", "CGPA"]) || "0.00"),
@@ -68,6 +69,9 @@ export function mapTranscriptPayload(data: any): any {
         credit_points: cleanCreditPoints(c.credit_points || c.Credit_Points || "")
       }))
     };
+    if (major) payload.major = major;
+    if (thesisTitle) payload.thesis_title = thesisTitle;
+    return payload;
   }
 
   const payload: any = {
