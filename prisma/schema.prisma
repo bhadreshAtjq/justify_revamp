@@ -22,6 +22,7 @@ model Institution {
   users            User[]
   records          StudentRecord[]
   anchors          MerkleAnchor[]
+  auditLogs        AuditLog[]
   hashProfiles     Json?            // Configuration for hashing
   branding         Json?            // UI branding config
   createdAt        DateTime         @default(now())
@@ -36,6 +37,7 @@ model User {
   role          UserRole    @default(PUBLIC_VERIFIER)
   institutionId String?
   institution   Institution? @relation(fields: [institutionId], references: [id])
+  auditLogs     AuditLog[]
   createdAt     DateTime     @default(now())
   updatedAt     DateTime     @updatedAt
 
@@ -78,3 +80,17 @@ model MerkleAnchor {
   createdAt     DateTime @default(now())
 }
 
+model AuditLog {
+  id            String   @id @default(cuid())
+  action        String   // "VERIFY", "ANCHOR", "UPLOAD"
+  details       String   // e.g. "Verified document for John Doe"
+  status        String   @default("SUCCESS") // SUCCESS, FAILED
+  userId        String?
+  user          User?    @relation(fields: [userId], references: [id])
+  institutionId String?
+  institution   Institution? @relation(fields: [institutionId], references: [id])
+  createdAt     DateTime @default(now())
+
+  @@index([institutionId])
+  @@index([userId])
+}

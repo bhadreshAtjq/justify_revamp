@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { verifyOnChain } from "@/lib/blockchain";
 import { prisma } from "@/lib/prisma";
+import { auth } from "@/auth";
 
 export async function POST(req: Request) {
   try {
@@ -24,6 +25,23 @@ export async function POST(req: Request) {
       if (rootResult.anchored) {
         onChainResult = { ...rootResult, inherited: true };
       }
+    }
+
+    const session = await auth();
+    const isValid = !!onChainResult.anchored;
+
+    try {
+      await prisma.auditLog.create({
+        data: {
+          action: "VERIFY",
+          details: `Verified document hash: ${docHash.slice(0, 12)}... Result: ${isValid ? 'VALID' : 'INVALID'}`,
+          status: isValid ? "SUCCESS" : "FAILED",
+          userId: session?.user?.id || null,
+          institutionId: (session?.user as any)?.institutionId || null,
+        }
+      });
+    } catch (logErr) {
+      console.error("Failed to write audit log:", logErr);
     }
 
     return NextResponse.json({

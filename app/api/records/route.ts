@@ -96,6 +96,20 @@ export async function POST(req: Request) {
       skipDuplicates: true,
     });
 
+    try {
+      await prisma.auditLog.create({
+        data: {
+          action: "INGEST",
+          details: `Ingested ${result.count} records (Type: ${type})`,
+          status: "SUCCESS",
+          userId: session.user.id,
+          institutionId: session.user.institutionId
+        }
+      });
+    } catch (logErr) {
+      console.error("Failed to write audit log:", logErr);
+    }
+
     return NextResponse.json({ 
       message: `Successfully synced ${result.count} new records`,
       count: result.count 

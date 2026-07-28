@@ -2,12 +2,14 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { FaColumns, FaShieldAlt, FaFlask, FaBuilding, FaSignOutAlt, FaLayerGroup } from "react-icons/fa";
+import { FaColumns, FaShieldAlt, FaFlask, FaBuilding, FaSignOutAlt, FaLayerGroup, FaCode } from "react-icons/fa";
 import { useSession, signOut } from "next-auth/react";
+import { useAppStore } from "@/store/useAppStore";
 
 export default function Sidebar() {
   const pathname = usePathname();
   const { data: session } = useSession();
+  const { developerMode, setDeveloperMode } = useAppStore();
 
   const allItems = [
     { href: "/dashboard", label: "Dashboard", icon: FaColumns, roles: ["SUPER_ADMIN", "INSTITUTION_ADMIN", "ISSUER", "AUDITOR"] },
@@ -17,9 +19,11 @@ export default function Sidebar() {
     { href: "/admin/tenants", label: "Tenants", icon: FaBuilding, roles: ["SUPER_ADMIN"] },
   ];
 
-  const navItems = allItems.filter(item => 
-    item.roles.includes(session?.user?.role || "")
-  );
+  const navItems = allItems.filter(item => {
+    if (!item.roles.includes(session?.user?.role || "")) return false;
+    if (item.href === "/sandbox" && !developerMode) return false;
+    return true;
+  });
 
   return (
     <aside className="sidebar">
@@ -43,7 +47,16 @@ export default function Sidebar() {
           );
         })}
       </nav>
-      <div style={{ marginTop: 'auto', padding: '0 12px 12px 12px' }}>
+      <div style={{ marginTop: 'auto', padding: '0 12px 12px 12px', borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: 12 }}>
+        <button 
+          onClick={() => setDeveloperMode(!developerMode)}
+          className={`nav-link ${developerMode ? "active" : ""}`}
+          style={{ width: '100%', background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left', marginBottom: 8, color: developerMode ? '#F2C94C' : undefined }}
+        >
+          <FaCode />
+          <span>Dev Mode {developerMode ? 'ON' : 'OFF'}</span>
+        </button>
+
         <button 
           onClick={() => signOut({ callbackUrl: "/" })}
           className="nav-link"

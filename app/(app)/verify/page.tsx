@@ -35,46 +35,33 @@ export default function VerifyPage() {
 
         store.setLoading("isProcessingOCR", true);
         const result = await processOCR(file, verifyType);
-        console.log("DEBUG: Raw OCR Result JSON ->", JSON.stringify(result, null, 2));
         
-        if (!result.registration_no || !result.name) {
-          console.warn("DEBUG: OCR result missing critical fields (reg_no or name)");
-        }
-
         const hash = generateStudentHash(result, store.hashConfig, verifyType);
-        console.log(`DEBUG: Final Generated Hash (${verifyType}) ->`, hash);
         store.setVerifyHash(hash);
-
         store.setOCRResult(result);
-        
         store.addActivityLog("ocr_complete", `OCR extraction complete for ${result.name}. Hash: ${hash.slice(0, 12)}...`);
+        store.setLoading("isProcessingOCR", false);
+
+        // Auto Verify
+        store.setLoading("isVerifying", true);
+        const vResult = await verifyDocument(hash);
+        store.setVerifyResult(vResult);
+        
+        const dbStatus = vResult.db.found ? "MATCHED in Registry" : "NOT FOUND in Registry";
+        const bcStatus = vResult.onChain.valid ? "ANCHORED on Blockchain" : "NOT ANCHORED";
+        
+        store.addActivityLog("verified", `Verification Result: ${dbStatus} | ${bcStatus}`);
+        store.setLoading("isVerifying", false);
+
       } catch (err) {
         store.setError(err instanceof Error ? err.message : "Service Unavailable");
-      } finally {
         store.setLoading("isValidatingQuality", false);
         store.setLoading("isProcessingOCR", false);
+        store.setLoading("isVerifying", false);
       }
     },
     [store, verifyType]
   );
-
-  const handleVerify = useCallback(async () => {
-    store.setError(null);
-    store.setLoading("isVerifying", true);
-    try {
-      const result = await verifyDocument(store.verifyHash);
-      store.setVerifyResult(result);
-      
-      const dbStatus = result.db.found ? "MATCHED in Registry" : "NOT FOUND in Registry";
-      const bcStatus = result.onChain.valid ? "ANCHORED on Blockchain" : "NOT ANCHORED";
-      
-      store.addActivityLog("verified", `Verification Result: ${dbStatus} | ${bcStatus}`);
-    } catch (err) {
-      store.setError(err instanceof Error ? err.message : "Verification Node Error");
-    } finally {
-      store.setLoading("isVerifying", false);
-    }
-  }, [store]);
 
 
   return (
@@ -204,12 +191,11 @@ export default function VerifyPage() {
             </section>
           )}
 
-          {store.verifyHash && !store.verifyResult && (
-            <section>
-              <div className="section-meta">STEP 03 -- ANCHOR CROSS-CHECK</div>
-              <button onClick={handleVerify} className="btn-premium btn-solid btn-block" disabled={store.isVerifying} style={{ padding: 14 }}>
-                <FaShieldAlt /> {store.isVerifying ? "Contacting Ethereum Nodes..." : "Perform Blockchain Verification"}
-              </button>
+          {store.isVerifying && (
+            <section className="animate-slide-up glass-card" style={{ textAlign: 'center', padding: '40px 20px' }}>
+              <div style={{ width: 40, height: 40, borderRadius: '50%', background: '#393E46', animation: 'pulseSoft 1s infinite', margin: '0 auto 16px' }}></div>
+              <h3 style={{ fontSize: 16, fontWeight: 700, margin: '0 0 8px' }}>Contacting Ethereum Nodes...</h3>
+              <p style={{ color: '#929AAB', fontSize: 13, margin: 0 }}>Cryptographically verifying the document hash against the global ledger.</p>
             </section>
           )}
 

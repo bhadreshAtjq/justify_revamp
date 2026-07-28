@@ -57,6 +57,9 @@ interface AppState {
   // Activity log
   activityLog: ActivityLogEntry[];
 
+  // Settings
+  developerMode: boolean;
+
   // Actions
   setCSVFile: (file: File | null) => void;
   setCSVData: (headers: string[], records: Record<string, string>[]) => void;
@@ -75,6 +78,7 @@ interface AppState {
   setLoading: (key: string, value: boolean) => void;
   setError: (error: string | null) => void;
   addActivityLog: (type: ActivityLogEntry["type"], message: string) => void;
+  setDeveloperMode: (mode: boolean) => void;
   resetDashboard: () => void;
   resetVerify: () => void;
 }
@@ -119,6 +123,9 @@ export const useAppStore = create<AppState>((set) => ({
 
   // Activity log
   activityLog: [],
+
+  // Settings
+  developerMode: false,
 
   // Actions
   setCSVFile: (file) => set({ csvFile: file }),
@@ -169,6 +176,8 @@ export const useAppStore = create<AppState>((set) => ({
         ...state.activityLog,
       ],
     })),
+
+  setDeveloperMode: (mode) => set({ developerMode: mode }),
 
   resetDashboard: () =>
     set({

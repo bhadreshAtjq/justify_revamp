@@ -16,6 +16,8 @@ import BlockchainStatusCard from "@/components/BlockchainStatusCard";
 import ActivityLog from "@/components/ActivityLog";
 import AnchorChecklist from "@/components/AnchorChecklist";
 import HistorySection from "@/components/HistorySection";
+import AuditLogSection from "@/components/AuditLogSection";
+import AnalyticsSection from "@/components/AnalyticsSection";
 import { FaDownload, FaRocket, FaDatabase, FaShieldAlt, FaPlus, FaList, FaChartLine, FaSearch } from "react-icons/fa";
 import { toast } from "react-hot-toast";
 import { downloadSample } from "@/lib/samples";
@@ -29,7 +31,7 @@ interface Institution {
 export default function DashboardPage() {
   const { data: session } = useSession();
   const store = useAppStore();
-  const [activeTab, setActiveTab] = useState<"upload" | "history" | "analytics">("upload");
+  const [activeTab, setActiveTab] = useState<"upload" | "history" | "audit" | "analytics">("upload");
   const [uploadType, setUploadType] = useState<"marksheet" | "certificate" | "transcript">("marksheet");
   const [refreshTrigger, setRefreshTrigger] = useState(0);
 
@@ -203,6 +205,13 @@ export default function DashboardPage() {
               style={{ padding: '8px 16px', fontSize: 12 }}
             >
               <FaList /> Repository
+            </button>
+            <button 
+              onClick={() => setActiveTab("audit")}
+              className={`btn-premium ${activeTab === 'audit' ? 'btn-solid' : ''}`}
+              style={{ padding: '8px 16px', fontSize: 12 }}
+            >
+              <FaShieldAlt /> Audit Trail
             </button>
             <button 
               onClick={() => setActiveTab("analytics")}
@@ -498,12 +507,14 @@ export default function DashboardPage() {
         </div>
       )}
 
-      {activeTab === "analytics" && (
-        <div className="glass-card animate-slide-up" style={{ padding: '80px', textAlign: 'center' }}>
-          <FaChartLine style={{ fontSize: 40, marginBottom: 20, color: '#929AAB' }} />
-          <h2 style={{ fontSize: 20, fontWeight: 700, marginBottom: 8 }}>Predictive Insights</h2>
-          <p style={{ color: '#929AAB', fontSize: 14 }}>Analytics module is currently processing institutional data points.</p>
+      {activeTab === "audit" && (
+        <div className="space-y-8 animate-slide-up">
+          <AuditLogSection />
         </div>
+      )}
+
+      {activeTab === "analytics" && (
+        <AnalyticsSection />
       )}
     </div>
   );
