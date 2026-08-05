@@ -15,7 +15,7 @@ async function getOCRBaseUrl(): Promise<string> {
       const data = await res.json();
       if (data.url) {
         cachedOcrUrl = data.url;
-        return cachedOcrUrl;
+        return cachedOcrUrl as string;
       }
     }
   } catch (err) {

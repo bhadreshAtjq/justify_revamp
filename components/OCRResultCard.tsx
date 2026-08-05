@@ -69,7 +69,7 @@ export default function OCRResultCard({ result, type = "marksheet" }: OCRResultC
             <FaUniversity style={{ color: '#929AAB', fontSize: 13 }} />
             <div>
               <p style={{ fontSize: 10, margin: 0, color: '#929AAB', fontWeight: 700, textTransform: 'uppercase' }}>Affiliated Institution</p>
-              <p style={{ fontSize: 13, margin: 0, fontWeight: 600, color: '#222831' }}>{result.university || result.college || result.College || "Junagadh Agricultural University"}</p>
+              <p style={{ fontSize: 13, margin: 0, fontWeight: 600, color: '#222831' }}>{result.university || result.college || result.College || "Universal Institute of Technology"}</p>
             </div>
           </div>
           

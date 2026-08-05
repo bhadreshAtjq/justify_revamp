@@ -79,60 +79,31 @@ function LoginForm() {
 
   return (
     <div className="login-page">
+      <div className="bg-glow bg-glow-1" />
+      <div className="bg-glow bg-glow-2" />
       <div className="login-grid-bg" />
 
-      {/* Left visual panel */}
-      <div className="login-visual">
-        <div className="login-visual-content">
-          <div className="lv-logo">
-            <div className="lv-logo-mark">J</div>
-            <span>JustifAI</span>
-          </div>
+      <button onClick={() => router.push("/")} className="back-btn animate-in delay-1">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+          <path d="m15 18-6-6 6-6"/>
+        </svg>
+        Back
+      </button>
 
-          <div className="lv-hero">
-            <h2>{isVerifier ? "Verify Documents" : "Institution Portal"}</h2>
-            <p>
-              {isVerifier
-                ? "Authenticate academic credentials against the blockchain ledger with a single scan."
-                : "Manage, anchor, and verify academic records using cryptographic proof on the public blockchain."
-              }
-            </p>
-          </div>
-
-          <div className="lv-stats">
-            <div className="lv-stat">
-              <div className="lv-stat-num">256</div>
-              <div className="lv-stat-label">BIT ENCRYPTION</div>
-            </div>
-            <div className="lv-stat-divider" />
-            <div className="lv-stat">
-              <div className="lv-stat-num">Polygon</div>
-              <div className="lv-stat-label">BLOCKCHAIN NETWORK</div>
-            </div>
-            <div className="lv-stat-divider" />
-            <div className="lv-stat">
-              <div className="lv-stat-num">Keccak</div>
-              <div className="lv-stat-label">HASH ALGORITHM</div>
-            </div>
-          </div>
-
-          <div className="lv-footer">
-            <button onClick={() => router.push("/")} className="lv-back-btn">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="m15 18-6-6 6-6"/>
-              </svg>
-              Back to Home
-            </button>
-          </div>
+      <div className="login-container animate-in delay-2">
+        <div className="login-header">
+          <h1>{mode === "login" ? "Welcome back" : "Create an account"}</h1>
+          <p>
+            {mode === "login"
+              ? "Enter your details to sign in to your account"
+              : "Register as a verifier to authenticate credentials"
+            }
+          </p>
         </div>
-      </div>
 
-      {/* Right form panel */}
-      <div className="login-form-panel">
-        <div className="login-form-container">
-
-          {/* Role toggle */}
+        <div className="login-card">
           <div className="lf-tabs">
+            <div className="lf-tabs-slider" style={{ transform: isVerifier || mode === "register" ? 'translateX(100%)' : 'translateX(0%)' }} />
             <button
               className={`lf-tab ${!isVerifier && mode === "login" ? "active" : ""}`}
               onClick={() => { setMode("login"); setError(""); setSuccess(""); router.replace("/login"); }}
@@ -147,18 +118,8 @@ function LoginForm() {
             </button>
           </div>
 
-          <div className="lf-header">
-            <h1>{mode === "login" ? "Sign In" : "Create Account"}</h1>
-            <p>
-              {mode === "login"
-                ? "Access your institution dashboard to manage academic records."
-                : "Register as a verifier. Your password will be sent to your email address."
-              }
-            </p>
-          </div>
-
           {error && (
-            <div className="lf-alert lf-alert-error">
+            <div className="lf-alert lf-alert-error animate-in">
               <div className="lf-alert-icon">
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                   <circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/>
@@ -169,7 +130,7 @@ function LoginForm() {
           )}
 
           {success && (
-            <div className="lf-alert lf-alert-success">
+            <div className="lf-alert lf-alert-success animate-in">
               <div className="lf-alert-icon">
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                   <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/>
@@ -196,13 +157,13 @@ function LoginForm() {
             )}
 
             <div className="lf-field">
-              <label htmlFor="email">Email Address</label>
+              <label htmlFor="email">Email</label>
               <input
                 id="email"
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                placeholder="your@email.com"
+                placeholder="m@example.com"
                 required
                 autoComplete="email"
               />
@@ -210,7 +171,9 @@ function LoginForm() {
 
             {mode === "login" && (
               <div className="lf-field">
-                <label htmlFor="password">Password</label>
+                <div className="label-row">
+                  <label htmlFor="password">Password</label>
+                </div>
                 <input
                   id="password"
                   type="password"
@@ -223,7 +186,7 @@ function LoginForm() {
               </div>
             )}
 
-            <button type="submit" className="lf-submit" disabled={loading}>
+            <button type="submit" className="btn-primary" disabled={loading}>
               {loading ? (
                 <div className="lf-spinner" />
               ) : mode === "login" ? (
@@ -233,225 +196,202 @@ function LoginForm() {
               )}
             </button>
           </form>
+        </div>
 
-          <div className="lf-switch">
-            {mode === "login" ? (
-              <p>
-                Need to verify a document?{" "}
-                <button onClick={() => { setMode("register"); setError(""); router.replace("/login?role=verifier"); }}>
-                  Create verifier account
-                </button>
-              </p>
-            ) : (
-              <p>
-                Already have an account?{" "}
-                <button onClick={() => { setMode("login"); setError(""); setSuccess(""); router.replace("/login"); }}>
-                  Sign in
-                </button>
-              </p>
-            )}
-          </div>
+        <div className="login-footer animate-in delay-3">
+          {mode === "login" ? (
+            <p>
+              Need to verify a document?{" "}
+              <button type="button" onClick={() => { setMode("register"); setError(""); router.replace("/login?role=verifier"); }}>
+                Sign up
+              </button>
+            </p>
+          ) : (
+            <p>
+              Already have an account?{" "}
+              <button type="button" onClick={() => { setMode("login"); setError(""); setSuccess(""); router.replace("/login"); }}>
+                Sign in
+              </button>
+            </p>
+          )}
         </div>
       </div>
 
       <style jsx>{`
         .login-page {
           display: flex;
+          align-items: center;
+          justify-content: center;
           min-height: 100vh;
           font-family: 'Inter', -apple-system, sans-serif;
+          background: #FFFFFF;
+          color: #000000;
           position: relative;
+          overflow: hidden;
+        }
+
+        /* Ambient Glows */
+        .bg-glow {
+          position: absolute;
+          filter: blur(140px);
+          opacity: 0.6;
+          border-radius: 50%;
+          pointer-events: none;
+        }
+        .bg-glow-1 {
+          width: 800px;
+          height: 800px;
+          background: rgba(211, 255, 233, 0.08);
+          top: -200px;
+          left: 50%;
+          transform: translateX(-50%);
+        }
+        .bg-glow-2 {
+          width: 600px;
+          height: 600px;
+          background: rgba(96, 165, 250, 0.08);
+          bottom: -150px;
+          right: -100px;
         }
 
         .login-grid-bg {
-          position: fixed;
+          position: absolute;
           inset: 0;
           background-image:
-            linear-gradient(rgba(57,62,70,0.02) 1px, transparent 1px),
-            linear-gradient(90deg, rgba(57,62,70,0.02) 1px, transparent 1px);
-          background-size: 60px 60px;
+            linear-gradient(rgba(15, 23, 42, 0.03) 1px, transparent 1px),
+            linear-gradient(90deg, rgba(15, 23, 42, 0.03) 1px, transparent 1px);
+          background-size: 50px 50px;
           pointer-events: none;
-          z-index: 0;
+          mask-image: radial-gradient(circle at center, black 0%, transparent 80%);
+          -webkit-mask-image: radial-gradient(circle at center, black 0%, transparent 80%);
         }
 
-        /* Left visual */
-        .login-visual {
-          flex: 1;
-          background: #393E46;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          position: relative;
-          overflow: hidden;
-          min-height: 100vh;
+        /* Animations */
+        @keyframes fadeInUp {
+          from { opacity: 0; transform: translateY(15px); }
+          to { opacity: 1; transform: translateY(0); }
         }
-        .login-visual::before {
-          content: '';
+        @keyframes spin {
+          to { transform: rotate(360deg); }
+        }
+        
+        .animate-in {
+          opacity: 0;
+          animation: fadeInUp 0.7s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+        .delay-1 { animation-delay: 0.1s; }
+        .delay-2 { animation-delay: 0.2s; }
+        .delay-3 { animation-delay: 0.3s; }
+
+        /* Back Button */
+        .back-btn {
           position: absolute;
-          inset: 0;
-          background-image:
-            linear-gradient(rgba(255,255,255,0.03) 1px, transparent 1px),
-            linear-gradient(90deg, rgba(255,255,255,0.03) 1px, transparent 1px);
-          background-size: 40px 40px;
-        }
-        .login-visual::after {
-          content: '';
-          position: absolute;
-          bottom: -120px;
-          right: -120px;
-          width: 400px;
-          height: 400px;
-          border-radius: 50%;
-          background: rgba(255,255,255,0.02);
-        }
-        .login-visual-content {
-          position: relative;
-          z-index: 1;
-          padding: 48px;
-          max-width: 460px;
-          display: flex;
-          flex-direction: column;
-          min-height: 100vh;
-          justify-content: center;
-        }
-        .lv-logo {
-          display: flex;
-          align-items: center;
-          gap: 10px;
-          font-size: 16px;
-          font-weight: 700;
-          color: #F7F7F7;
-          margin-bottom: 60px;
-        }
-        .lv-logo-mark {
-          width: 34px;
-          height: 34px;
-          background: rgba(255,255,255,0.12);
-          border-radius: 8px;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          color: #F7F7F7;
-          font-weight: 800;
-          font-size: 14px;
-        }
-        .lv-hero h2 {
-          font-size: 32px;
-          font-weight: 700;
-          color: #F7F7F7;
-          letter-spacing: -0.8px;
-          margin-bottom: 14px;
-          line-height: 1.2;
-        }
-        .lv-hero p {
-          font-size: 14px;
-          color: rgba(255,255,255,0.5);
-          line-height: 1.7;
-          margin-bottom: 48px;
-        }
-        .lv-stats {
-          display: flex;
-          align-items: center;
-          gap: 24px;
-        }
-        .lv-stat-num {
-          font-size: 18px;
-          font-weight: 700;
-          color: #F7F7F7;
-          font-family: 'JetBrains Mono', monospace;
-          margin-bottom: 4px;
-        }
-        .lv-stat-label {
-          font-size: 9px;
-          font-weight: 600;
-          letter-spacing: 1.5px;
-          color: rgba(255,255,255,0.3);
-        }
-        .lv-stat-divider {
-          width: 1px;
-          height: 32px;
-          background: rgba(255,255,255,0.08);
-        }
-        .lv-footer {
-          margin-top: 60px;
-        }
-        .lv-back-btn {
+          top: 32px;
+          left: 32px;
           display: inline-flex;
           align-items: center;
           gap: 6px;
           background: none;
           border: none;
-          color: rgba(255,255,255,0.4);
-          font-size: 12px;
+          color: #607D8B;
+          font-size: 14px;
           font-weight: 500;
           cursor: pointer;
           font-family: inherit;
-          padding: 0;
-          transition: color 0.18s;
+          transition: color 0.2s;
+          z-index: 10;
         }
-        .lv-back-btn:hover {
-          color: rgba(255,255,255,0.8);
+        .back-btn:hover { color: #000000; }
+
+        /* Container & Header */
+        .login-container {
+          width: 100%;
+          max-width: 420px;
+          padding: 20px;
+          position: relative;
+          z-index: 10;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
         }
 
-        /* Right form */
-        .login-form-panel {
-          flex: 1;
-          background: #F7F7F7;
+        .login-header {
+          text-align: center;
+          margin-bottom: 32px;
+          width: 100%;
+        }
+        .logo-mark {
+          width: 44px;
+          height: 44px;
+          background: #D3FFE9;
+          border-radius: 10px;
           display: flex;
           align-items: center;
           justify-content: center;
-          position: relative;
-          z-index: 1;
-          min-height: 100vh;
+          font-weight: 800;
+          font-size: 20px;
+          color: #263238;
+          margin: 0 auto 24px;
+          box-shadow: 0 8px 20px rgba(211, 255, 233, 0.2);
         }
-        .login-form-container {
+        .login-header h1 {
+          font-size: 26px;
+          font-weight: 700;
+          color: #263238;
+          letter-spacing: -0.03em;
+          margin-bottom: 8px;
+        }
+        .login-header p {
+          font-size: 14px;
+          color: #607D8B;
+        }
+
+        /* Glassmorphic Card */
+        .login-card {
           width: 100%;
-          max-width: 380px;
-          padding: 40px;
+          background: #FFFFFF;
+          border: 1px solid #E2E8F0;
+          border-radius: 16px;
+          padding: 32px;
+          box-shadow: 0 20px 40px rgba(15, 23, 42, 0.06), 0 1px 3px rgba(15, 23, 42, 0.05);
         }
+
+        /* Tabs */
         .lf-tabs {
           display: flex;
-          gap: 4px;
-          padding: 4px;
-          background: #FFFFFF;
+          position: relative;
+          background: #F1F5F9;
           border-radius: 10px;
-          border: 1px solid rgba(57,62,70,0.06);
-          margin-bottom: 36px;
+          padding: 4px;
+          width: 100%;
+          margin-bottom: 32px;
+          border: 1px solid #E2E8F0;
+        }
+        .lf-tabs-slider {
+          position: absolute;
+          width: calc(50% - 4px);
+          height: calc(100% - 8px);
+          background: #FFFFFF;
+          border: 1px solid rgba(15, 23, 42, 0.04);
+          border-radius: 8px;
+          box-shadow: 0 2px 4px rgba(15, 23, 42, 0.05);
+          transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
         }
         .lf-tab {
           flex: 1;
-          padding: 10px 16px;
+          padding: 10px 12px;
           border: none;
-          background: none;
-          border-radius: 7px;
+          background: transparent;
           font-size: 13px;
           font-weight: 600;
-          color: #929AAB;
+          color: #607D8B;
           cursor: pointer;
-          transition: all 0.18s;
+          position: relative;
+          z-index: 10;
           font-family: inherit;
+          transition: color 0.2s;
         }
-        .lf-tab.active {
-          background: #393E46;
-          color: #F7F7F7;
-        }
-        .lf-tab:hover:not(.active) {
-          color: #393E46;
-        }
-        .lf-header {
-          margin-bottom: 28px;
-        }
-        .lf-header h1 {
-          font-size: 24px;
-          font-weight: 700;
-          color: #222831;
-          letter-spacing: -0.5px;
-          margin-bottom: 8px;
-        }
-        .lf-header p {
-          font-size: 13px;
-          color: #929AAB;
-          line-height: 1.6;
-        }
+        .lf-tab.active { color: #263238; }
 
         /* Alerts */
         .lf-alert {
@@ -460,140 +400,116 @@ function LoginForm() {
           gap: 10px;
           padding: 12px 14px;
           border-radius: 10px;
-          margin-bottom: 20px;
+          margin-bottom: 24px;
           font-size: 13px;
           font-weight: 500;
-          animation: slideUp 0.25s ease;
         }
         .lf-alert-error {
-          background: rgba(192, 57, 43, 0.05);
-          border: 1px solid rgba(192, 57, 43, 0.12);
-          color: #C0392B;
+          background: #FEF2F2;
+          border: 1px solid #FEE2E2;
+          color: #B91C1C;
         }
         .lf-alert-success {
-          background: rgba(45, 106, 79, 0.05);
-          border: 1px solid rgba(45, 106, 79, 0.12);
-          color: #2D6A4F;
+          background: #F0FDF4;
+          border: 1px solid #DCFCE7;
+          color: #15803D;
         }
-        .lf-alert-icon {
-          flex-shrink: 0;
-          display: flex;
-        }
+        .lf-alert-icon { display: flex; flex-shrink: 0; }
 
         /* Form */
         .lf-form {
           display: flex;
           flex-direction: column;
-          gap: 18px;
+          gap: 20px;
         }
         .lf-field {
           display: flex;
           flex-direction: column;
-          gap: 7px;
+          gap: 8px;
+        }
+        .label-row {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
         }
         .lf-field label {
-          font-size: 12px;
+          font-size: 13px;
           font-weight: 600;
-          color: #393E46;
-          letter-spacing: 0.02em;
+          color: #607D8B;
         }
         .lf-field input {
-          padding: 12px 14px;
+          padding: 12px 16px;
           border-radius: 10px;
-          border: 1.5px solid rgba(57,62,70,0.1);
+          border: 1.5px solid #E2E8F0;
           font-size: 14px;
           font-family: inherit;
-          color: #222831;
+          color: #000000;
           background: #FFFFFF;
-          transition: all 0.18s;
+          transition: all 0.2s;
           outline: none;
         }
-        .lf-field input::placeholder {
-          color: #C0C5CE;
-        }
+        .lf-field input::placeholder { color: #94A3B8; }
         .lf-field input:focus {
-          border-color: #393E46;
-          box-shadow: 0 0 0 3px rgba(57,62,70,0.06);
+          border-color: #000000;
+          box-shadow: 0 0 0 4px rgba(211, 255, 233, 0.1);
         }
 
-        .lf-submit {
-          margin-top: 4px;
-          padding: 13px;
-          background: #393E46;
-          color: #F7F7F7;
-          border: none;
+        /* Button */
+        .btn-primary {
+          padding: 14px;
+          background: #D3FFE9;
+          border: 1px solid #D3FFE9;
           border-radius: 10px;
           font-size: 14px;
           font-weight: 600;
+          color: #000000;
           cursor: pointer;
           transition: all 0.2s;
-          font-family: inherit;
+          margin-top: 8px;
           display: flex;
           align-items: center;
           justify-content: center;
-          min-height: 46px;
+          box-shadow: 0 4px 12px rgba(211, 255, 233, 0.2);
         }
-        .lf-submit:hover:not(:disabled) {
-          background: #2c3038;
+        .btn-primary:hover:not(:disabled) {
+          background: linear-gradient(135deg, #D3FFE9, #D3FFE9);
+          border-color: #000000;
           transform: translateY(-1px);
-          box-shadow: 0 4px 14px rgba(57,62,70,0.2);
+          box-shadow: 0 6px 16px rgba(211, 255, 233, 0.3);
         }
-        .lf-submit:disabled {
-          opacity: 0.6;
-          cursor: not-allowed;
-        }
+        .btn-primary:active:not(:disabled) { transform: translateY(1px); }
+        .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
+
         .lf-spinner {
           width: 18px;
           height: 18px;
-          border: 2px solid rgba(255,255,255,0.2);
-          border-top-color: #F7F7F7;
+          border: 2px solid rgba(255,255,255,0.3);
+          border-top-color: #000000;
           border-radius: 50%;
-          animation: spin 0.5s linear infinite;
+          animation: spin 0.6s linear infinite;
         }
 
-        .lf-switch {
+        /* Footer */
+        .login-footer {
           margin-top: 24px;
           text-align: center;
         }
-        .lf-switch p {
+        .login-footer p {
           font-size: 13px;
-          color: #929AAB;
+          color: #607D8B;
         }
-        .lf-switch button {
+        .login-footer button {
           background: none;
           border: none;
-          color: #393E46;
+          color: #000000;
           font-weight: 600;
           cursor: pointer;
           font-size: 13px;
           font-family: inherit;
-          text-decoration: underline;
-          text-underline-offset: 2px;
-          transition: opacity 0.18s;
+          transition: color 0.2s;
+          margin-left: 4px;
         }
-        .lf-switch button:hover {
-          opacity: 0.7;
-        }
-
-        @keyframes slideUp {
-          from { opacity: 0; transform: translateY(8px); }
-          to { opacity: 1; transform: translateY(0); }
-        }
-        @keyframes spin {
-          to { transform: rotate(360deg); }
-        }
-
-        @media (max-width: 900px) {
-          .login-page { flex-direction: column; }
-          .login-visual { min-height: auto; padding: 40px 0; }
-          .login-visual-content { min-height: auto; padding: 32px; }
-          .lv-hero { margin-bottom: 0; }
-          .lv-hero p { margin-bottom: 24px; }
-          .lv-stats { display: none; }
-          .lv-footer { margin-top: 24px; }
-          .login-form-panel { min-height: auto; }
-          .login-form-container { padding: 32px 24px; }
-        }
+        .login-footer button:hover { color: #1D4ED8; text-decoration: underline; }
       `}</style>
     </div>
   );
@@ -603,7 +519,7 @@ export default function LoginPage() {
   return (
     <Suspense fallback={
       <div style={{ minHeight: '100vh', background: '#F7F7F7', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        <div style={{ width: 24, height: 24, borderRadius: '50%', border: '2.5px solid #EEEEEE', borderTopColor: '#393E46', animation: 'spin 0.6s linear infinite' }} />
+        <div style={{ width: 24, height: 24, borderRadius: '50%', border: '2.5px solid #EEEEEE', borderTopColor: '#000000', animation: 'spin 0.6s linear infinite' }} />
       </div>
     }>
       <LoginForm />

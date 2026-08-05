@@ -29,7 +29,7 @@ interface Institution {
 export default function DashboardPage() {
   const { data: session } = useSession();
   const store = useAppStore();
-  const uploadType = store.uploadType;
+  const [uploadType, setUploadType] = useState<"marksheet" | "certificate" | "transcript">("marksheet");
 
   // Super Admin specific state
   const [institutions, setInstitutions] = useState<any[]>([]);
@@ -353,6 +353,70 @@ export default function DashboardPage() {
               </section>
             )}
           </div>
+
+          <div className="dash-side-col">
+            <div className="dash-card" style={{ marginBottom: '24px' }}>
+              <h3 className="dash-card-title">Document Type</h3>
+              <div className="dash-doc-tabs">
+                <div className="dash-tabs-bg">
+                  <div className="dash-tabs-slider doc-slider" style={{
+                    transform: `translateX(${
+                      uploadType === 'marksheet' ? '0%' : 
+                      uploadType === 'certificate' ? '100%' : '200%'
+                    })`
+                  }} />
+                  {(["marksheet", "certificate", "transcript"] as const).map((t) => (
+                    <button
+                      key={t}
+                      onClick={() => { setUploadType(t); store.resetDashboard(); }}
+                      className={`dash-tab doc-tab ${uploadType === t ? "active" : ""}`}
+                    >
+                      {t}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            <ActivityLog entries={store.activityLog} />
+
+            <div className="dash-card mt-8">
+              <h3 className="dash-card-title">Infrastructure Status</h3>
+              <div className="status-list">
+                <div className="status-item">
+                  <div className="status-label">
+                    <div className="status-dot green"></div>
+                    <span>Blockchain Network</span>
+                  </div>
+                  <span className="status-badge green">ONLINE</span>
+                </div>
+                <div className="status-item">
+                  <div className="status-label">
+                    <div className="status-dot green"></div>
+                    <span>Database Cluster</span>
+                  </div>
+                  <span className="status-badge green">SYNCED</span>
+                </div>
+                <div className="status-item">
+                  <div className="status-label">
+                    <div className="status-dot green"></div>
+                    <span>Hash Engine (Keccak256)</span>
+                  </div>
+                  <span className="status-badge green">READY</span>
+                </div>
+              </div>
+            </div>
+            
+            {store.isSyncing && (
+              <div className="dash-card sync-card animate-slide-up mt-6">
+                <FaDatabase className="sync-icon" />
+                <div>
+                  <div className="sync-title">PERSISTENCE ACTIVE</div>
+                  <div className="sync-desc">Syncing local data to PostgreSQL...</div>
+                </div>
+              </div>
+            )}
+          </div>
         </div>
 
       <style jsx>{`
@@ -472,9 +536,15 @@ export default function DashboardPage() {
 
         /* GRID LAYOUT */
         .dash-grid {
-          display: flex;
-          flex-direction: column;
+          display: grid;
+          grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr);
           gap: 32px;
+          align-items: start;
+        }
+        @media (max-width: 1024px) {
+          .dash-grid {
+            grid-template-columns: 1fr;
+          }
         }
         .dash-main-col {
           display: flex;

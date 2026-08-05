@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useRef, useEffect } from "react";
 import { 
   FaChevronLeft, 
   FaChevronRight, 
@@ -29,6 +29,99 @@ interface CSVPreviewTableProps {
   records: Record<string, string>[];
   fileName: string;
   type?: string;
+}
+
+function PageSizeSelect({ value, onChange }: { value: number, onChange: (val: number) => void }) {
+  const [isOpen, setIsOpen] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setIsOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  return (
+    <div className="relative inline-block text-left" ref={dropdownRef}>
+      <button 
+        onClick={() => setIsOpen(!isOpen)}
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          gap: '8px',
+          padding: '6px 10px',
+          backgroundColor: '#FFFFFF',
+          border: '1px solid #CBD5E1',
+          borderRadius: '6px',
+          fontSize: '12px',
+          fontWeight: 600,
+          color: '#006064',
+          minWidth: '64px',
+          flexShrink: 0,
+          cursor: 'pointer',
+          outline: 'none'
+        }}
+      >
+        <span>{value}</span>
+        <svg className={`w-3 h-3 text-[#006064] transition-transform ${isOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path></svg>
+      </button>
+      
+      {isOpen && (
+        <>
+          <style>{`
+            .custom-dropdown-item {
+              padding: 8px 12px;
+              font-size: 12px;
+              cursor: pointer;
+              transition: background-color 0.2s;
+              color: #006064;
+            }
+            .custom-dropdown-item:hover {
+              background-color: #F4FAFA;
+            }
+            .custom-dropdown-item.active {
+              background-color: #006064;
+              color: #FFFFFF;
+              font-weight: 500;
+            }
+            .custom-dropdown-item.active:hover {
+              background-color: #006064;
+            }
+          `}</style>
+          <div style={{
+            position: 'absolute',
+            top: '100%',
+            marginTop: '4px',
+            right: 0,
+            width: '100%',
+            minWidth: '70px',
+            backgroundColor: '#FFFFFF',
+            border: '1px solid #D3FFE9',
+            borderRadius: '6px',
+            boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
+            zIndex: 50,
+            overflow: 'hidden',
+            padding: '4px 0'
+          }}>
+            {[10, 20, 50, 100].map(size => (
+              <div 
+                key={size}
+                onClick={() => { onChange(size); setIsOpen(false); }}
+                className={`custom-dropdown-item ${value === size ? 'active' : ''}`}
+              >
+                {size}
+              </div>
+            ))}
+          </div>
+        </>
+      )}
+    </div>
+  );
 }
 
 export default function CSVPreviewTable({
@@ -251,7 +344,9 @@ export default function CSVPreviewTable({
       <div className="glass-card" style={{ 
         padding: '14px 20px', marginBottom: 0, borderRadius: '12px 12px 0 0', 
         display: 'flex', gap: 14, alignItems: 'center', justifyContent: 'space-between',
-        flexWrap: 'wrap' 
+        flexWrap: 'wrap',
+        position: 'relative',
+        zIndex: 20
       }}>
         <div style={{ display: 'flex', gap: 14, alignItems: 'center', flex: '1 1 300px' }}>
           <div style={{ position: 'relative', flex: 1, maxWidth: 400 }}>
@@ -270,9 +365,10 @@ export default function CSVPreviewTable({
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
           <span style={{ fontSize: 10, fontWeight: 700, color: '#929AAB' }}>ROWS</span>
-          <select value={pageSize} onChange={(e) => { setPageSize(Number(e.target.value)); setCurrentPage(1); }} className="inner-card" style={{ padding: '8px 12px', border: 'none', cursor: 'pointer', fontSize: 12, fontWeight: 600 }}>
-            {[10, 20, 50, 100].map(size => <option key={size} value={size}>{size}</option>)}
-          </select>
+          <PageSizeSelect 
+            value={pageSize} 
+            onChange={(newSize) => { setPageSize(newSize); setCurrentPage(1); }} 
+          />
         </div>
       </div>
 
@@ -280,24 +376,27 @@ export default function CSVPreviewTable({
         <table className="premium-table" style={{ width: '100%', tableLayout: 'auto' }}>
           <thead>
             <tr>
-              <th style={{ minWidth: 60, width: 60, position: 'sticky', left: 0, zIndex: 10, background: '#393E46', color: '#F7F7F7' }}>#</th>
+              <th style={{ minWidth: 60, width: 60, position: 'sticky', left: 0, zIndex: 10, background: 'rgba(250, 252, 251, 1)', boxShadow: '2px 0 5px -2px rgba(0,0,0,0.05)' }}>#</th>
               {headers.map((header) => (
                 <th key={header} style={{ minWidth: 120 }}>{header.replace(/_/g, ' ')}</th>
               ))}
-              <th style={{ minWidth: 100, position: 'sticky', right: 0, zIndex: 10, background: '#393E46', color: '#F7F7F7', boxShadow: '-2px 0 5px rgba(0,0,0,0.05)' }}>ACTION</th>
+              <th style={{ minWidth: 100, position: 'sticky', right: 0, zIndex: 10, background: 'rgba(250, 252, 251, 1)', textAlign: 'center', boxShadow: '-2px 0 5px -2px rgba(0,0,0,0.05)' }}>ACTION</th>
             </tr>
           </thead>
           <tbody>
             {currentRecords.map((record, idx) => (
               <tr key={idx}>
-                <td style={{ fontWeight: 700, color: '#929AAB', position: 'sticky', left: 0, zIndex: 5, background: '#FFFFFF', borderRight: '1px solid var(--border)' }}>
+                <td style={{ fontWeight: 700, color: '#929AAB', position: 'sticky', left: 0, zIndex: 5, background: '#FFFFFF', boxShadow: '2px 0 5px -2px rgba(0,0,0,0.05)' }}>
                   {(currentPage - 1) * pageSize + idx + 1}
                 </td>
                 {headers.map((header) => (
                   <td key={`${idx}-${header}`}>{record[header] || "-"}</td>
                 ))}
-                <td style={{ position: 'sticky', right: 0, zIndex: 5, background: '#FFFFFF', textAlign: 'center', borderLeft: '1px solid var(--border)', boxShadow: '-2px 0 5px rgba(0,0,0,0.05)' }}>
-                  <button onClick={() => handlePreview(record)} style={{ padding: '6px 14px', background: '#393E46', color: '#F7F7F7', border: 'none', borderRadius: 6, fontSize: 10, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, margin: '0 auto' }}>
+                <td style={{ position: 'sticky', right: 0, zIndex: 5, background: '#FFFFFF', textAlign: 'center', boxShadow: '-2px 0 5px -2px rgba(0,0,0,0.05)' }}>
+                  <button onClick={() => handlePreview(record)} style={{ padding: '6px 14px', background: 'rgba(0, 123, 62, 0.06)', color: 'var(--secondary)', border: 'none', borderRadius: 6, fontSize: 10, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, margin: '0 auto', transition: 'background 0.2s' }}
+                    onMouseOver={(e) => e.currentTarget.style.background = 'rgba(0, 123, 62, 0.12)'}
+                    onMouseOut={(e) => e.currentTarget.style.background = 'rgba(0, 123, 62, 0.06)'}
+                  >
                     <FaFileAlt /> VIEW
                   </button>
                 </td>

@@ -23,6 +23,7 @@ export interface HashConfig {
 
 interface AppState {
   // Dashboard state
+  uploadType: "marksheet" | "certificate" | "transcript";
   csvFile: File | null;
   csvHeaders: string[];
   csvRecords: Record<string, string>[];
@@ -61,6 +62,7 @@ interface AppState {
   developerMode: boolean;
 
   // Actions
+  setUploadType: (type: "marksheet" | "certificate" | "transcript") => void;
   setCSVFile: (file: File | null) => void;
   setCSVData: (headers: string[], records: Record<string, string>[]) => void;
   setHashes: (hashes: HashEntry[]) => void;
@@ -85,6 +87,7 @@ interface AppState {
 
 export const useAppStore = create<AppState>((set) => ({
   // Dashboard state
+  uploadType: "marksheet",
   csvFile: null,
   csvHeaders: [],
   csvRecords: [],
@@ -128,6 +131,7 @@ export const useAppStore = create<AppState>((set) => ({
   developerMode: false,
 
   // Actions
+  setUploadType: (type) => set({ uploadType: type }),
   setCSVFile: (file) => set({ csvFile: file }),
 
   setCSVData: (headers, records) =>

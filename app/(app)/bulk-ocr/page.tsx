@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useCallback, useMemo, useRef } from "react";
+import { useState, useCallback, useMemo, useRef, useEffect } from "react";
+import { useSession } from "next-auth/react";
 import { processBulkOCRAsync, pollJobStatus, JobSubmitResponse, BulkProcessingResponse, BulkProcessingResult, anchorRoot, logMerkle, syncRecordsToDB } from "@/services/api";
 import { generateHashesFromRecords } from "@/lib/hash";
 import { buildMerkleTree } from "@/lib/merkle";
@@ -43,10 +44,18 @@ import jsPDF from "jspdf";
 
 export default function BulkOCRPage() {
   const store = useAppStore();
+  const { data: session } = useSession();
   const hashes = useAppStore(s => s.hashes);
   const hashConfig = useAppStore(s => s.hashConfig);
   const university = useAppStore(s => s.university);
   const year = useAppStore(s => s.year);
+
+  // Auto-populate university name from session
+  useEffect(() => {
+    if (session?.user?.institutionName && !store.university) {
+      store.setUniversity(session.user.institutionName);
+    }
+  }, [session, store]);
 
   const [isProcessing, setIsProcessing] = useState(false);
   const [zipFile, setZipFile] = useState<File | null>(null);
@@ -414,16 +423,7 @@ export default function BulkOCRPage() {
               onClear={clearResults}
             />
 
-            <div className="glass-card" style={{ 
-              padding: '6px', 
-              display: 'flex', 
-              gap: '6px', 
-              marginTop: '16px', 
-              background: 'white',
-              border: '1px solid #e2e8f0',
-              borderRadius: '14px',
-              boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.05)'
-            }}>
+            <div style={{ display: 'flex', gap: 4, padding: 4, background: '#FFFFFF', borderRadius: 10, border: '1px solid rgba(57,62,70,0.08)', marginTop: 16 }}>
               {[
                 { id: "marksheet", label: "Marksheet" },
                 { id: "certificate", label: "Certificate" },
@@ -432,19 +432,8 @@ export default function BulkOCRPage() {
                 <button
                   key={type.id}
                   onClick={() => setUploadType(type.id as any)}
-                  style={{ 
-                    flex: 1, 
-                    padding: '12px 20px', 
-                    borderRadius: '10px',
-                    border: 'none',
-                    fontSize: '13px',
-                    fontWeight: 700,
-                    cursor: 'pointer',
-                    transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
-                    background: uploadType === type.id ? 'var(--accent)' : 'transparent',
-                    color: uploadType === type.id ? 'white' : '#64748b',
-                    boxShadow: uploadType === type.id ? '0 4px 12px rgba(0,0,0,0.1)' : 'none'
-                  }}
+                  className={`btn-premium ${uploadType === type.id ? "btn-solid" : ""}`}
+                  style={{ flex: 1, padding: '10px', fontSize: 13 }}
                 >
                   {type.label}
                 </button>
@@ -480,7 +469,7 @@ export default function BulkOCRPage() {
                     placeholder="Search extracted records..."
                     value={searchQuery}
                     onChange={(e) => { setSearchQuery(e.target.value); setCurrentPage(1); }}
-                    style={{ width: '100%', padding: '12px 16px 12px 44px', borderRadius: 12, border: '2px solid var(--accent)', background: 'white', fontSize: 13, fontWeight: 600 }}
+                    style={{ width: '100%', padding: '12px 16px 12px 44px', borderRadius: 12, border: '1px solid #D3FFE9', boxShadow: '0 2px 8px rgba(0,0,0,0.04)', background: 'white', fontSize: 13, fontWeight: 600 }}
                   />
                 </div>
               </div>
@@ -489,13 +478,13 @@ export default function BulkOCRPage() {
                 <table className="premium-table">
                   <thead>
                     <tr>
-                      <th style={{ minWidth: 60, width: 60, position: 'sticky', left: 0, zIndex: 10, background: 'var(--accent)', color: 'white' }}>#</th>
+                      <th style={{ minWidth: 60, width: 60, position: 'sticky', left: 0, zIndex: 10, background: '#F4FAFA', color: '#607D8B' }}>#</th>
                       <th style={{ minWidth: 100 }}>DOC TYPE</th>
                       <th style={{ minWidth: 180 }}>FILENAME</th>
                       {headers.map((h) => (
                         <th key={h} style={{ minWidth: 120 }}>{h.replace(/_/g, ' ').toUpperCase()}</th>
                       ))}
-                      <th style={{ minWidth: 200, position: 'sticky', right: 0, zIndex: 10, background: 'var(--primary)', color: 'white' }}>ACTIONS</th>
+                      <th style={{ minWidth: 200, position: 'sticky', right: 0, zIndex: 10, background: '#F4FAFA', color: '#607D8B' }}>ACTIONS</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -511,12 +500,12 @@ export default function BulkOCRPage() {
                         : headers; // fallback to tab headers for pending rows
                       return (
                         <tr key={idx}>
-                          <td style={{ fontWeight: 800, opacity: 0.3, position: 'sticky', left: 0, zIndex: 5, background: '#f8fafc' }}>
+                          <td style={{ fontWeight: 800, opacity: 0.3, position: 'sticky', left: 0, zIndex: 5, background: '#F4FAFA' }}>
                             {(currentPage - 1) * pageSize + idx + 1}
                           </td>
                           <td>
                             <span className="badge-premium" style={{
-                              background: record.doc_type === 'transcript' ? '#3b82f6' : record.doc_type === 'marksheet' ? '#10b981' : record.doc_type === 'certificate' ? '#f59e0b' : '#94a3b8',
+                              background: record.doc_type === 'transcript' ? '#3b82f6' : record.doc_type === 'marksheet' ? '#D3FFE9' : record.doc_type === 'certificate' ? '#FB8C00' : '#94a3b8',
                               color: 'white'
                             }}>
                               {record.doc_type || "pending"}
@@ -528,7 +517,7 @@ export default function BulkOCRPage() {
                           {recordHeaders.map((h) => (
                             <td key={h}>{String(rowData[h] || "—")}</td>
                           ))}
-                          <td style={{ position: 'sticky', right: 0, zIndex: 5, background: '#f8fafc' }}>
+                          <td style={{ position: 'sticky', right: 0, zIndex: 5, background: '#F4FAFA' }}>
                             <div style={{ display: 'flex', gap: 8, justifyContent: 'center' }}>
                               {record.status === "pending" || record.status === "processing" ? (
                                 <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: 'var(--primary)', fontSize: 11, fontWeight: 700 }}>
@@ -543,7 +532,7 @@ export default function BulkOCRPage() {
                                   INSPECT RECORD
                                 </button>
                               ) : (
-                                <div style={{ fontSize: 11, color: '#ef4444', fontWeight: 600 }}>
+                                <div style={{ fontSize: 11, color: '#E53935', fontWeight: 600 }}>
                                   {record.error || "Failed"}
                                 </div>
                               )}
@@ -600,7 +589,7 @@ export default function BulkOCRPage() {
                       <input
                         className="inner-card"
                         style={{ width: '100%', border: 'none', padding: 16, fontSize: 14 }}
-                        placeholder="e.g. Stanford University"
+                        placeholder="e.g. University Name"
                         value={university}
                         onChange={(e) => store.setUniversity(e.target.value)}
                       />
@@ -685,7 +674,7 @@ export default function BulkOCRPage() {
             {/* Modal Content Area */}
             <div style={{ flex: 1, display: 'flex', overflow: 'hidden' }}>
               {/* Sidebar / Tabs */}
-              <div style={{ width: 220, background: '#f8fafc', borderRight: '1px solid #eee', padding: '24px 16px' }}>
+              <div style={{ width: 220, background: '#F4FAFA', borderRight: '1px solid #eee', padding: '24px 16px' }}>
                 <div style={{ marginBottom: 24 }}>
                   <div className="section-meta" style={{ marginBottom: 12 }}>VIEWS</div>
                   {[
@@ -712,7 +701,7 @@ export default function BulkOCRPage() {
                         fontSize: 13,
                         fontWeight: 600,
                         background: modalTab === tab.id ? 'var(--primary)' : 'transparent',
-                        color: modalTab === tab.id ? 'white' : '#64748b'
+                        color: modalTab === tab.id ? 'white' : '#607D8B'
                       }}
                     >
                       <tab.icon />
@@ -737,7 +726,7 @@ export default function BulkOCRPage() {
                     </h4>
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: 20 }}>
                       {Object.entries(viewingData.data || {}).map(([key, val]) => (
-                        <div key={key} style={{ padding: '16px 24px', borderRadius: 12, border: '1px solid #f1f5f9', background: '#f8fafc' }}>
+                        <div key={key} style={{ padding: '16px 24px', borderRadius: 12, border: '1px solid #f1f5f9', background: '#F4FAFA' }}>
                           <div className="section-meta" style={{ fontSize: 10, marginBottom: 4 }}>{key.replace(/_/g, ' ').toUpperCase()}</div>
                           <div style={{ fontSize: 15, fontWeight: 600, color: '#334155' }}>
                             {Array.isArray(val) ? (
@@ -815,7 +804,7 @@ export default function BulkOCRPage() {
                     </h4>
                     <div style={{
                       padding: 32,
-                      background: '#f8fafc',
+                      background: '#F4FAFA',
                       borderRadius: 16,
                       border: '1px solid #e2e8f0',
                       lineHeight: 1.8,
@@ -882,7 +871,7 @@ export default function BulkOCRPage() {
             </div>
 
             {/* Modal Footer */}
-            <div style={{ padding: '16px 32px', background: '#f8fafc', borderTop: '1px solid #eee', display: 'flex', justifyContent: 'flex-end', gap: 12 }}>
+            <div style={{ padding: '16px 32px', background: '#F4FAFA', borderTop: '1px solid #eee', display: 'flex', justifyContent: 'flex-end', gap: 12 }}>
               <button onClick={() => setViewingData(null)} className="btn-premium btn-outline" style={{ padding: '10px 24px' }}>Close Inspector</button>
               <button onClick={handleDownloadPDF} className="btn-premium btn-solid" style={{ padding: '10px 24px' }}>
                 {isGeneratingPDF ? <FaSpinner className="animate-spin" /> : <FaDownload />} Generate PDF

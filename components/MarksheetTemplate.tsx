@@ -156,12 +156,14 @@ export default function MarksheetTemplate({ data, id = "marksheet-pdf" }: { data
             <span key={i} style={{
               top: Math.floor(i / 5) * 80 + 20,
               left: (i % 5) * 220 - 50
-            }}>JUNAGADH AGRICULTURAL UNIVERSITY</span>
+            }}>{(data.university || "UNIVERSAL INSTITUTE OF TECHNOLOGY").toUpperCase()}</span>
           ))}
         </div>
 
         <div className="bg-logo-watermark">
-          <img src="/assets/uni_logo.jpg" alt="watermark" />
+          <div style={{ fontSize: 100, opacity: 0.1, display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%' }}>
+            <span style={{ border: '8px solid currentColor', borderRadius: '50%', padding: '40px' }}>U</span>
+          </div>
         </div>
 
         <div className="content">
@@ -169,12 +171,12 @@ export default function MarksheetTemplate({ data, id = "marksheet-pdf" }: { data
           <div className="header">
             <div style={{ width: 70 }}></div>
             <div className="header-titles">
-              <div className="line1">Junagadh Agricultural University</div>
-              <div className="line2">Junagadh &ndash; Gujarat (India)</div>
+              <div className="line1">{data.university || "Universal Institute of Technology"}</div>
+              <div className="line2">{data.location || "Global Campus"}</div>
               <div className="line3">Student's Evaluation Report</div>
             </div>
             <div className="logo-circle">
-              <img src="/assets/uni_logo2.png" alt="University logo" style={{ width: '74px', height: '86px', objectFit: 'contain' }} />
+               <div style={{ width: '74px', height: '74px', borderRadius: '50%', background: '#eee', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold', fontSize: '24px', color: '#999' }}>U</div>
             </div>
           </div>
 

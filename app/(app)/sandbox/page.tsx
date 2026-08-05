@@ -115,7 +115,7 @@ export default function SandboxPage() {
                    className="strategy-toggle" 
                    style={{ 
                      opacity: value ? 1 : 0.45, 
-                     borderColor: value ? '#393E46' : 'rgba(57,62,70,0.08)',
+                     borderColor: value ? '#D3FFE9' : 'rgba(57,62,70,0.08)',
                      background: value ? 'rgba(57,62,70,0.03)' : '#FFFFFF',
                    }}
                  >
@@ -123,7 +123,7 @@ export default function SandboxPage() {
                      type="checkbox" 
                      checked={value} 
                      onChange={() => store.updateHashConfig({ [key]: !value })}
-                     style={{ accentColor: '#393E46' }}
+                     style={{ accentColor: '#000000' }}
                    />
                    <span style={{ fontSize: 11, fontWeight: 600 }}>{key.replace('include', '').toUpperCase()}</span>
                  </label>
@@ -152,11 +152,11 @@ export default function SandboxPage() {
                    {results.leaves.map((leaf, i) => (
                      <div key={i} className="inner-card" style={{ padding: 14 }}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
-                          <span style={{ fontSize: 10, fontWeight: 700, color: '#393E46' }}>LEAF #{i+1}</span>
+                          <span style={{ fontSize: 10, fontWeight: 700, color: '#000000' }}>LEAF #{i+1}</span>
                           <span style={{ fontSize: 9, color: '#929AAB' }}>Keccak256</span>
                         </div>
                         <div style={{ background: '#FFFFFF', padding: 8, borderRadius: 6, fontSize: 11, fontFamily: "'JetBrains Mono', monospace", wordBreak: 'break-all', marginBottom: 10, display: 'flex', alignItems: 'center', gap: 8, border: '1px solid rgba(57,62,70,0.06)' }}>
-                          <div style={{ height: 5, width: 5, borderRadius: '50%', background: '#393E46', flexShrink: 0 }}></div>
+                          <div style={{ height: 5, width: 5, borderRadius: '50%', background: '#D3FFE9', flexShrink: 0 }}></div>
                           {leaf.hash}
                         </div>
                         <div style={{ fontSize: 9, color: '#929AAB', fontWeight: 600, letterSpacing: '1px', margin: '8px 0 4px', textTransform: 'uppercase' }}>HASHED CONTENT (PRE-IMAGE)</div>
@@ -171,7 +171,7 @@ export default function SandboxPage() {
           ) : (
             <div className="glass-card" style={{ height: '100%', minHeight: 400, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', color: '#929AAB', border: '2px dashed rgba(57,62,70,0.1)' }}>
               <FaProjectDiagram fontSize={40} style={{ marginBottom: 14 }} />
-              <p style={{ fontWeight: 600, fontSize: 14, color: '#393E46' }}>Calculation Results Pending</p>
+              <p style={{ fontWeight: 600, fontSize: 14, color: '#000000' }}>Calculation Results Pending</p>
               <p style={{ fontSize: 12 }}>Enter JSON and click calculate to generate proofs.</p>
             </div>
           )}

@@ -81,10 +81,10 @@ export default function TranscriptTemplate({ data, id = "transcript-pdf" }: { da
       {pageNum === 1 && (
         <>
           <div className="transcript-header">
-            <img src="/assets/uni_logo.jpg" alt="Logo" className="transcript-logo" onError={(e) => e.currentTarget.style.display='none'} />
+            <div style={{ width: '80px', height: '80px', borderRadius: '50%', background: '#eee', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold', fontSize: '24px', color: '#999' }}>U</div>
             <div className="transcript-titles">
-              <h1>Junagadh Agricultural University</h1>
-              <h2>Junagadh</h2>
+              <h1>{data.university || "Universal Institute of Technology"}</h1>
+              <h2>{data.location || "Global Campus"}</h2>
               <h3>Transcript of Academic Record</h3>
             </div>
             <div className="transcript-student-photo">

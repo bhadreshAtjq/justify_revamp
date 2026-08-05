@@ -37,17 +37,23 @@ export default function ActivityLog({ entries }: ActivityLogProps) {
 
   if (entries.length === 0) {
     return (
-      <div className="glass-card">
-        <h3 style={{ marginBottom: 10, fontSize: 14, fontWeight: 700 }}>Activity Log</h3>
-        <p style={{ color: '#929AAB', fontSize: 13 }}>No recent activity to show</p>
+      <div style={{ background: '#FFFFFF', borderRadius: 12, border: '1px solid #D3FFE9', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.05)', overflow: 'hidden' }}>
+        <div style={{ padding: '16px 20px', borderBottom: '1px solid #F1F5F9', background: '#F4FAFA' }}>
+          <h3 style={{ margin: 0, fontSize: 12, fontWeight: 700, color: '#607D8B', textTransform: 'uppercase', letterSpacing: '1px' }}>Activity Log</h3>
+        </div>
+        <div style={{ padding: '20px' }}>
+          <p style={{ color: '#929AAB', fontSize: 13, margin: 0 }}>No recent activity to show</p>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="glass-card">
-      <h3 style={{ marginBottom: 16, fontSize: 14, fontWeight: 700 }}>Session Activity</h3>
-      <div className="noshadow-scroll" style={{ maxHeight: 300 }}>
+    <div style={{ background: '#FFFFFF', borderRadius: 12, border: '1px solid #D3FFE9', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.05)', overflow: 'hidden' }}>
+      <div style={{ padding: '16px 20px', borderBottom: '1px solid #F1F5F9', background: '#F4FAFA' }}>
+        <h3 style={{ margin: 0, fontSize: 12, fontWeight: 700, color: '#607D8B', textTransform: 'uppercase', letterSpacing: '1px' }}>Session Activity</h3>
+      </div>
+      <div className="noshadow-scroll" style={{ maxHeight: 300, padding: '20px' }}>
         {entries.map((entry) => (
           <div key={entry.id} className="activity-entry animate-slide-up">
             <div className="activity-icon">

@@ -90,7 +90,7 @@ export default function TenantsPage() {
         <form onSubmit={handleCreate}>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 24, marginBottom: 32 }}>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-              <label style={{ fontSize: 12, fontWeight: 600, color: '#393E46' }}>Institution Name</label>
+              <label style={{ fontSize: 12, fontWeight: 600, color: '#000000' }}>Institution Name</label>
               <input 
                 value={name}
                 onChange={(e) => setName(e.target.value)}
@@ -102,7 +102,7 @@ export default function TenantsPage() {
             </div>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-              <label style={{ fontSize: 12, fontWeight: 600, color: '#393E46' }}>Unique Slug</label>
+              <label style={{ fontSize: 12, fontWeight: 600, color: '#000000' }}>Unique Slug</label>
               <input 
                 value={slug}
                 onChange={(e) => setSlug(e.target.value)}
@@ -114,7 +114,7 @@ export default function TenantsPage() {
             </div>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-              <label style={{ fontSize: 12, fontWeight: 600, color: '#393E46' }}>Admin Email</label>
+              <label style={{ fontSize: 12, fontWeight: 600, color: '#000000' }}>Admin Email</label>
               <input 
                 type="email"
                 value={adminEmail}
@@ -127,7 +127,7 @@ export default function TenantsPage() {
             </div>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-              <label style={{ fontSize: 12, fontWeight: 600, color: '#393E46' }}>Temporary Password</label>
+              <label style={{ fontSize: 12, fontWeight: 600, color: '#000000' }}>Temporary Password</label>
               <input 
                 type="password"
                 value={adminPassword}

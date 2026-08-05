@@ -227,17 +227,17 @@ export default function CertificateTemplate({ data, id = "certificate-pdf" }: { 
                 </defs>
                 <text className="arched-text-path">
                   <textPath href="#headerPath" startOffset="50%" textAnchor="middle">
-                    JUNAGADH AGRICULTURAL UNIVERSITY
+                    {(data.university || "UNIVERSAL INSTITUTE OF TECHNOLOGY").toUpperCase()}
                   </textPath>
                 </text>
               </svg>
             </div>
 
-            <div className="cert-sub-header">Junagadh - 362001</div>
+            <div className="cert-sub-header">{data.location || "Global Campus"}</div>
 
             <div className="cert-main-visuals">
               <div style={{ width: 110 }}></div> {/* Placeholder to keep logo centered */}
-              <img src="/assets/uni_logo.jpg" alt="Logo" className="cert-logo-center" onError={(e) => e.currentTarget.style.display='none'} />
+              <div style={{ width: '120px', height: '120px', borderRadius: '50%', background: '#eee', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold', fontSize: '36px', color: '#999', margin: '0 auto', border: '8px double #D4AF37' }}>U</div>
               <div className="cert-photo-box">
                 {data.photo_url ? (
                   <img src={data.photo_url} alt="Student" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
